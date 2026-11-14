@@ -12,7 +12,7 @@
  *
  * Códigos de error de dominio:
  *   VALIDACION | DUPLICADO | ELIMINADO | NO_ENCONTRADO |
- *   CREDENCIALES | PENDIENTE | PROHIBIDO
+ *   CREDENCIALES | PENDIENTE | PROHIBIDO | STOCK_INSUFICIENTE
  */
 const bcrypt = require("bcryptjs");
 const { randomUUID } = require("crypto");
@@ -453,6 +453,112 @@ class Logica {
       throw fallo("PROHIBIDO", "no tiene permiso sobre esta bolsa");
     }
     this.datos.eliminarBolsa(bolsaId);
+    return true;
+  }
+
+  // — Diario de extracciones y cálculo de ratios (PBI-10) —
+
+  /**
+   * Registra una extracción asociada a una bolsa de café, descuenta inventario y calcula ratio.
+   */
+  registrarExtraccion(usuarioEmail, datos = {}) {
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    if (!EMAIL_RE.test(normalizado)) {
+      throw fallo("VALIDACION", "email inválido");
+    }
+    if (!datos || typeof datos !== "object") {
+      throw fallo("VALIDACION", "datos de extracción inválidos");
+    }
+    const bolsa = this.datos.buscarBolsa(datos.bolsaId);
+    if (!bolsa) {
+      throw fallo("NO_ENCONTRADO", "bolsa no encontrada");
+    }
+    if (bolsa.usuarioEmail !== normalizado) {
+      throw fallo("PROHIBIDO", "no tiene permiso sobre esta bolsa");
+    }
+    const cafeGramos = Number(datos.cafeGramos);
+    const aguaGramos = Number(datos.aguaGramos);
+    if (!cafeGramos || cafeGramos <= 0 || !aguaGramos || aguaGramos <= 0) {
+      throw fallo("VALIDACION", "cafeGramos y aguaGramos deben ser mayores a 0");
+    }
+    if (typeof datos.metodo !== "string" || !datos.metodo.trim()) {
+      throw fallo("VALIDACION", "el método es obligatorio");
+    }
+
+    // Regla de inventario
+    if (bolsa.gramosRestantes < cafeGramos) {
+      throw fallo("STOCK_INSUFICIENTE", "No queda suficiente café en la bolsa");
+    }
+    bolsa.gramosRestantes = Number((bolsa.gramosRestantes - cafeGramos).toFixed(2));
+    if (bolsa.gramosRestantes <= 0) {
+      bolsa.gramosRestantes = 0;
+      bolsa.estado = "agotada";
+    }
+    this.datos.guardarBolsa(bolsa);
+
+    // Cálculo de ratio
+    const ratio = Number((aguaGramos / cafeGramos).toFixed(1));
+
+    const extraccion = {
+      id: randomUUID(),
+      usuarioEmail: normalizado,
+      bolsaId: datos.bolsaId,
+      nombreCafe: bolsa.nombre || bolsa.origen,
+      origen: bolsa.origen,
+      metodo: datos.metodo.trim(),
+      cafeGramos,
+      aguaGramos,
+      ratio,
+      tiempoSegundos: Number(datos.tiempoSegundos) || 0,
+      molienda: (typeof datos.molienda === "string" && datos.molienda.trim()) || "Media",
+      notasSabor: (typeof datos.notasSabor === "string" && datos.notasSabor.trim()) || "",
+      puntuacion: Number(datos.puntuacion) || 0,
+      esPublica: Boolean(datos.esPublica),
+      creadaEn: new Date().toISOString(),
+    };
+
+    this.datos.guardarExtraccion(extraccion);
+    return { extraccion, bolsaActualizada: bolsa };
+  }
+
+  /**
+   * Lista las extracciones del usuario ordenadas por creadaEn descendente.
+   */
+  listarExtracciones(usuarioEmail) {
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    return this.datos
+      .listarExtraccionesPorUsuario(normalizado)
+      .sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+  }
+
+  /**
+   * Obtiene una extracción por id. Si es ajena pero no pública -> PROHIBIDO.
+   */
+  obtenerExtraccion(usuarioEmail, extraccionId) {
+    const extraccion = this.datos.buscarExtraccion(extraccionId);
+    if (!extraccion) {
+      throw fallo("NO_ENCONTRADO", "extracción no encontrada");
+    }
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    if (extraccion.usuarioEmail !== normalizado && !extraccion.esPublica) {
+      throw fallo("PROHIBIDO", "no tiene permiso sobre esta extracción");
+    }
+    return extraccion;
+  }
+
+  /**
+   * Elimina una extracción por id. Propietario o admin pueden borrarla.
+   */
+  eliminarExtraccion(usuarioEmail, extraccionId, opts = {}) {
+    const extraccion = this.datos.buscarExtraccion(extraccionId);
+    if (!extraccion) {
+      throw fallo("NO_ENCONTRADO", "extracción no encontrada");
+    }
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    if (!opts.esAdmin && extraccion.usuarioEmail !== normalizado) {
+      throw fallo("PROHIBIDO", "no tiene permiso sobre esta extracción");
+    }
+    this.datos.eliminarExtraccion(extraccionId);
     return true;
   }
 
