@@ -271,6 +271,51 @@ function createApp(logica, opts = {}) {
     res.json({ permitido: resultado.permitido, motivo: resultado.motivo });
   });
 
+  // — Despensa de café (PBI-9) —
+
+  // POST /api/bolsas: crea una bolsa de café -> 201
+  app.post("/api/bolsas", requerirAuth, (req, res) => {
+    try {
+      const cuerpo = req.body || {};
+      const bolsa = logica.crearBolsa(req.usuario.email, cuerpo);
+      log("info", "bolsa creada", { id: bolsa.id, email: req.usuario.email });
+      res.status(201).json(bolsa);
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // GET /api/bolsas: lista las bolsas del usuario autenticado -> 200
+  app.get("/api/bolsas", requerirAuth, (req, res) => {
+    try {
+      res.json(logica.listarBolsas(req.usuario.email));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // GET /api/bolsas/:id: obtiene una bolsa específica -> 200
+  app.get("/api/bolsas/:id", requerirAuth, (req, res) => {
+    try {
+      res.json(logica.obtenerBolsa(req.usuario.email, req.params.id));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // DELETE /api/bolsas/:id: elimina una bolsa -> 200
+  app.delete("/api/bolsas/:id", requerirAuth, (req, res) => {
+    try {
+      logica.eliminarBolsa(req.usuario.email, req.params.id, {
+        esAdmin: logica.esAdmin(req.usuario.email),
+      });
+      log("info", "bolsa eliminada", { id: req.params.id, por: req.usuario.email });
+      res.json({ borrado: true });
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
   // Rutas /api desconocidas -> 404 JSON (último: no tapa a las rutas reales).
   app.use("/api", (req, res) => {
     res.status(404).json({ error: "ruta no encontrada" });
