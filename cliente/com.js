@@ -88,6 +88,49 @@ const Com = {
     return this.pedir("DELETE", "/api/users/" + encodeURIComponent(email), undefined, true);
   },
 
+  // — Despensa de café (PBI-9) —
+  listarBolsas() {
+    return this.pedir("GET", "/api/bolsas", undefined, true);
+  },
+
+  crearBolsa(datos) {
+    return this.pedir("POST", "/api/bolsas", datos, true);
+  },
+
+  borrarBolsa(id) {
+    return this.pedir("DELETE", "/api/bolsas/" + encodeURIComponent(id), undefined, true);
+  },
+
+  // — Diario de extracciones y cálculo de ratios (PBI-10) —
+  listarExtracciones() {
+    return this.pedir("GET", "/api/extracciones", undefined, true);
+  },
+
+  crearExtraccion(datos) {
+    return this.pedir("POST", "/api/extracciones", datos, true);
+  },
+
+  borrarExtraccion(id) {
+    return this.pedir("DELETE", "/api/extracciones/" + encodeURIComponent(id), undefined, true);
+  },
+
+  // — Recetas de comunidad, moderación y métricas (PBI-11) —
+  listarComunidad(params = {}) {
+    const q = new URLSearchParams();
+    if (params.metodo) q.set("metodo", params.metodo);
+    if (params.buscar) q.set("buscar", params.buscar);
+    const qs = q.toString() ? "?" + q.toString() : "";
+    return this.pedir("GET", "/api/comunidad" + qs, undefined, true);
+  },
+
+  moderarReceta(id, accion) {
+    return this.pedir("POST", "/api/admin/extracciones/" + encodeURIComponent(id) + "/moderar", { accion }, true);
+  },
+
+  obtenerMetricas() {
+    return this.pedir("GET", "/api/admin/metricas", undefined, true);
+  },
+
   // Canje del enlace de activación (PBI-7, página pública).
   verificar(token) {
     return this.pedir("GET", "/api/auth/verificar/" + encodeURIComponent(token));
