@@ -562,6 +562,136 @@ class Logica {
     return true;
   }
 
+  // — Recetas de la comunidad, moderación y métricas (PBI-11) —
+
+  /**
+   * Lista recetas públicas de la comunidad con filtros opcionales de método y búsqueda.
+   */
+  listarComunidad(filtros = {}) {
+    let resultado = this.datos.listarExtraccionesPublicas();
+
+    if (filtros.metodo && typeof filtros.metodo === "string") {
+      const m = filtros.metodo.trim().toLowerCase();
+      resultado = resultado.filter(
+        (ext) => ext.metodo && ext.metodo.toLowerCase() === m
+      );
+    }
+
+    if (filtros.buscar && typeof filtros.buscar === "string") {
+      const b = filtros.buscar.trim().toLowerCase();
+      resultado = resultado.filter(
+        (ext) =>
+          (ext.nombreCafe && ext.nombreCafe.toLowerCase().includes(b)) ||
+          (ext.origen && ext.origen.toLowerCase().includes(b))
+      );
+    }
+
+    return resultado.sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+  }
+
+  /**
+   * Modera una receta (solo admin): despublicar o eliminar.
+   */
+  moderarReceta(adminEmail, extraccionId, accion) {
+    if (!this.esAdmin(adminEmail)) {
+      throw fallo("PROHIBIDO", "requiere rol administrador");
+    }
+    const extraccion = this.datos.buscarExtraccion(extraccionId);
+    if (!extraccion) {
+      throw fallo("NO_ENCONTRADO", "extracción no encontrada");
+    }
+
+    if (accion === "despublicar") {
+      extraccion.esPublica = false;
+      this.datos.guardarExtraccion(extraccion);
+      return extraccion;
+    }
+
+    if (accion === "eliminar") {
+      this.datos.eliminarExtraccion(extraccionId);
+      return { eliminada: true };
+    }
+
+    throw fallo("VALIDACION", "acción de moderación inválida");
+  }
+
+  /**
+   * Obtiene estadísticas agregadas globales de la plataforma (solo admin).
+   */
+  obtenerMetricasPlataforma(adminEmail) {
+    if (!this.esAdmin(adminEmail)) {
+      throw fallo("PROHIBIDO", "requiere rol administrador");
+    }
+
+    const usuarios = this.datos.listarUsuarios();
+    const totalUsuarios = usuarios.filter((u) => u.estado === "activo").length;
+
+    const bolsas = this.datos.listarTodasBolsas();
+    const totalBolsas = bolsas.length;
+
+    const extracciones = this.datos.listarTodasExtracciones();
+    const totalExtracciones = extracciones.length;
+
+    const totalCafeGramosConsumidos = Number(
+      extracciones
+        .reduce((acc, e) => acc + (Number(e.cafeGramos) || 0), 0)
+        .toFixed(1)
+    );
+
+    // Método más popular
+    const conteoMetodos = {};
+    for (const e of extracciones) {
+      if (e.metodo) {
+        conteoMetodos[e.metodo] = (conteoMetodos[e.metodo] || 0) + 1;
+      }
+    }
+    let metodoMasPopular = "Ninguno";
+    let maxMetodo = 0;
+    for (const [m, count] of Object.entries(conteoMetodos)) {
+      if (count > maxMetodo) {
+        maxMetodo = count;
+        metodoMasPopular = m;
+      }
+    }
+
+    // Origen más consumido
+    const conteoOrigenes = {};
+    for (const e of extracciones) {
+      if (e.origen) {
+        conteoOrigenes[e.origen] = (conteoOrigenes[e.origen] || 0) + 1;
+      }
+    }
+    let origenMasConsumido = "Ninguno";
+    let maxOrigen = 0;
+    for (const [o, count] of Object.entries(conteoOrigenes)) {
+      if (count > maxOrigen) {
+        maxOrigen = count;
+        origenMasConsumido = o;
+      }
+    }
+
+    // Promedio de puntuación (> 0)
+    const conPuntuacion = extracciones.filter((e) => Number(e.puntuacion) > 0);
+    const promedioPuntuacion = conPuntuacion.length
+      ? Number(
+          (
+            conPuntuacion.reduce((acc, e) => acc + Number(e.puntuacion), 0) /
+            conPuntuacion.length
+          ).toFixed(1)
+        )
+      : 0;
+
+    return {
+      totalUsuarios,
+      totalBolsas,
+      totalExtracciones,
+      totalCafeGramosConsumidos,
+      metodoMasPopular,
+      origenMasConsumido,
+      promedioPuntuacion,
+    };
+  }
+
   /**
    * [VARIANTE-5] Decide si un actor puede eliminar a un objetivo.
    * Función pura: no accede a la base de datos. Las reglas se aplican

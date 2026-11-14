@@ -236,6 +236,20 @@ class Datos {
     this.borrarDe("extracciones", { id });
     return ok;
   }
+
+  // — Consultas globales y comunitarias (PBI-11) —
+
+  listarExtraccionesPublicas() {
+    return [...this.extracciones.values()].filter((e) => e.esPublica === true);
+  }
+
+  listarTodasExtracciones() {
+    return [...this.extracciones.values()];
+  }
+
+  listarTodasBolsas() {
+    return [...this.bolsas.values()];
+  }
 }
 
 module.exports = Datos;
