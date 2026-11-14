@@ -380,6 +380,82 @@ class Logica {
     return { email: u.email, nombre: u.nombre, rol: u.rol, estado: u.estado };
   }
 
+  // — Despensa de café (PBI-9) —
+
+  /**
+   * Crea una bolsa de café en la despensa del usuario.
+   * Valida campos obligatorios y gramos > 0.
+   */
+  crearBolsa(usuarioEmail, datos) {
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    if (!EMAIL_RE.test(normalizado)) {
+      throw fallo("VALIDACION", "email inválido");
+    }
+    const nombre = typeof datos.nombre === "string" ? datos.nombre.trim() : "";
+    const origen = typeof datos.origen === "string" ? datos.origen.trim() : "";
+    if (!nombre || !origen) {
+      throw fallo("VALIDACION", "nombre y origen son obligatorios");
+    }
+    const gramosIniciales = Number(datos.gramosIniciales);
+    if (!gramosIniciales || gramosIniciales <= 0) {
+      throw fallo("VALIDACION", "gramosIniciales debe ser un número mayor que 0");
+    }
+    const bolsa = {
+      id: randomUUID(),
+      usuarioEmail: normalizado,
+      nombre,
+      origen,
+      tostador: (typeof datos.tostador === "string" && datos.tostador.trim()) || "Desconocido",
+      variedad: (typeof datos.variedad === "string" && datos.variedad.trim()) || "Variada",
+      proceso: datos.proceso || "Lavado",
+      gramosIniciales,
+      gramosRestantes: gramosIniciales,
+      estado: "activa",
+      creadaEn: new Date().toISOString(),
+    };
+    this.datos.guardarBolsa(bolsa);
+    return bolsa;
+  }
+
+  /**
+   * Lista las bolsas del usuario, ordenadas por fecha descendente.
+   */
+  listarBolsas(usuarioEmail) {
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    return this.datos
+      .listarBolsasPorUsuario(normalizado)
+      .sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+  }
+
+  /**
+   * Obtiene una bolsa por id. Solo el propietario puede verla.
+   */
+  obtenerBolsa(usuarioEmail, bolsaId) {
+    const bolsa = this.datos.buscarBolsa(bolsaId);
+    if (!bolsa) {
+      throw fallo("NO_ENCONTRADO", "bolsa no encontrada");
+    }
+    if (bolsa.usuarioEmail !== this.normalizarEmail(usuarioEmail)) {
+      throw fallo("PROHIBIDO", "no tiene permiso sobre esta bolsa");
+    }
+    return bolsa;
+  }
+
+  /**
+   * Elimina una bolsa. El propietario o un admin pueden borrarla.
+   */
+  eliminarBolsa(usuarioEmail, bolsaId, opts = {}) {
+    const bolsa = this.datos.buscarBolsa(bolsaId);
+    if (!bolsa) {
+      throw fallo("NO_ENCONTRADO", "bolsa no encontrada");
+    }
+    if (!opts.esAdmin && bolsa.usuarioEmail !== this.normalizarEmail(usuarioEmail)) {
+      throw fallo("PROHIBIDO", "no tiene permiso sobre esta bolsa");
+    }
+    this.datos.eliminarBolsa(bolsaId);
+    return true;
+  }
+
   /**
    * [VARIANTE-5] Decide si un actor puede eliminar a un objetivo.
    * Función pura: no accede a la base de datos. Las reglas se aplican
