@@ -362,6 +362,43 @@ function createApp(logica, opts = {}) {
     }
   });
 
+  // — Recetas de la comunidad y moderación/métricas (PBI-11) —
+
+  // GET /api/comunidad: lista recetas públicas de la comunidad -> 200
+  app.get("/api/comunidad", requerirAuth, (req, res) => {
+    try {
+      const filtros = {
+        metodo: req.query.metodo,
+        buscar: req.query.buscar,
+      };
+      res.json(logica.listarComunidad(filtros));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // POST /api/admin/extracciones/:id/moderar: modera receta (solo admin) -> 200
+  app.post("/api/admin/extracciones/:id/moderar", requerirAuth, requerirAdmin, (req, res) => {
+    try {
+      const { accion } = req.body || {};
+      const resultado = logica.moderarReceta(req.usuario.email, req.params.id, accion);
+      log("info", "receta moderada", { id: req.params.id, accion, admin: req.usuario.email });
+      res.json(resultado);
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // GET /api/admin/metricas: obtiene métricas globales de la plataforma (solo admin) -> 200
+  app.get("/api/admin/metricas", requerirAuth, requerirAdmin, (req, res) => {
+    try {
+      const metricas = logica.obtenerMetricasPlataforma(req.usuario.email);
+      res.json(metricas);
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
   // Rutas /api desconocidas -> 404 JSON (último: no tapa a las rutas reales).
   app.use("/api", (req, res) => {
     res.status(404).json({ error: "ruta no encontrada" });
