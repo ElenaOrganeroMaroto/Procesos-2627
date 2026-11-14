@@ -17,6 +17,7 @@ const { crearOAuth } = require("./oauth");
 // Errores de dominio (logica.js) -> HTTP. Solo transporte.
 const ESTADO_POR_CODIGO = {
   VALIDACION: 400,
+  STOCK_INSUFICIENTE: 400,
   CREDENCIALES: 401,
   PENDIENTE: 403,
   PROHIBIDO: 403,
@@ -310,6 +311,51 @@ function createApp(logica, opts = {}) {
         esAdmin: logica.esAdmin(req.usuario.email),
       });
       log("info", "bolsa eliminada", { id: req.params.id, por: req.usuario.email });
+      res.json({ borrado: true });
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // — Diario de extracciones y cálculo de ratios (PBI-10) —
+
+  // POST /api/extracciones: registra una extracción -> 201
+  app.post("/api/extracciones", requerirAuth, (req, res) => {
+    try {
+      const cuerpo = req.body || {};
+      const resultado = logica.registrarExtraccion(req.usuario.email, cuerpo);
+      log("info", "extracción registrada", { id: resultado.extraccion.id, email: req.usuario.email });
+      res.status(201).json(resultado);
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // GET /api/extracciones: lista las extracciones del usuario autenticado -> 200
+  app.get("/api/extracciones", requerirAuth, (req, res) => {
+    try {
+      res.json(logica.listarExtracciones(req.usuario.email));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // GET /api/extracciones/:id: obtiene una extracción -> 200
+  app.get("/api/extracciones/:id", requerirAuth, (req, res) => {
+    try {
+      res.json(logica.obtenerExtraccion(req.usuario.email, req.params.id));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // DELETE /api/extracciones/:id: elimina una extracción -> 200
+  app.delete("/api/extracciones/:id", requerirAuth, (req, res) => {
+    try {
+      logica.eliminarExtraccion(req.usuario.email, req.params.id, {
+        esAdmin: logica.esAdmin(req.usuario.email),
+      });
+      log("info", "extracción eliminada", { id: req.params.id, por: req.usuario.email });
       res.json({ borrado: true });
     } catch (err) {
       enviarError(res, err);

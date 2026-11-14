@@ -24,6 +24,8 @@ class Datos {
     this.verificaciones = new Map();
     // Bolsas de café (PBI-9): id -> bolsa.
     this.bolsas = new Map();
+    // Diario de extracciones (PBI-10): id -> extracción.
+    this.extracciones = new Map();
     // null = modo memoria (sin Mongo).
     this.db = null;
     this._client = null;
@@ -75,6 +77,10 @@ class Datos {
     for (const b of await this.db.collection("bolsas").find({}).toArray()) {
       const limpia = sinId(b);
       this.bolsas.set(limpia.id, limpia);
+    }
+    for (const ext of await this.db.collection("extracciones").find({}).toArray()) {
+      const limpia = sinId(ext);
+      this.extracciones.set(limpia.id, limpia);
     }
   }
 
@@ -198,6 +204,36 @@ class Datos {
   eliminarBolsa(id) {
     const ok = this.bolsas.delete(id);
     this.borrarDe("bolsas", { id });
+    return ok;
+  }
+
+  // — Diario de extracciones (PBI-10) —
+
+  guardarExtraccion(extraccion) {
+    const copia = { ...extraccion };
+    this.extracciones.set(copia.id, copia);
+    this.persistir("extracciones", { id: copia.id }, copia);
+  }
+
+  buscarExtraccion(id) {
+    return this.extracciones.get(id) || null;
+  }
+
+  listarExtraccionesPorUsuario(usuarioEmail) {
+    return [...this.extracciones.values()].filter(
+      (e) => e.usuarioEmail === usuarioEmail
+    );
+  }
+
+  listarExtraccionesPorBolsa(bolsaId) {
+    return [...this.extracciones.values()].filter(
+      (e) => e.bolsaId === bolsaId
+    );
+  }
+
+  eliminarExtraccion(id) {
+    const ok = this.extracciones.delete(id);
+    this.borrarDe("extracciones", { id });
     return ok;
   }
 }
