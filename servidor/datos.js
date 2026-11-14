@@ -22,6 +22,8 @@ class Datos {
     this.sesiones = new Map();
     // Verificaciones de email (PBI-7): token de un solo uso -> email.
     this.verificaciones = new Map();
+    // Bolsas de café (PBI-9): id -> bolsa.
+    this.bolsas = new Map();
     // null = modo memoria (sin Mongo).
     this.db = null;
     this._client = null;
@@ -69,6 +71,10 @@ class Datos {
     }
     for (const v of await this.db.collection("verificaciones").find({}).toArray()) {
       this.verificaciones.set(v.token, v.email);
+    }
+    for (const b of await this.db.collection("bolsas").find({}).toArray()) {
+      const limpia = sinId(b);
+      this.bolsas.set(limpia.id, limpia);
     }
   }
 
@@ -168,6 +174,30 @@ class Datos {
   eliminarVerificacion(token) {
     const ok = this.verificaciones.delete(token);
     this.borrarDe("verificaciones", { token });
+    return ok;
+  }
+
+  // — Bolsas de café (PBI-9) —
+
+  guardarBolsa(bolsa) {
+    const copia = { ...bolsa };
+    this.bolsas.set(copia.id, copia);
+    this.persistir("bolsas", { id: copia.id }, copia);
+  }
+
+  buscarBolsa(id) {
+    return this.bolsas.get(id) || null;
+  }
+
+  listarBolsasPorUsuario(usuarioEmail) {
+    return [...this.bolsas.values()].filter(
+      (b) => b.usuarioEmail === usuarioEmail
+    );
+  }
+
+  eliminarBolsa(id) {
+    const ok = this.bolsas.delete(id);
+    this.borrarDe("bolsas", { id });
     return ok;
   }
 }
