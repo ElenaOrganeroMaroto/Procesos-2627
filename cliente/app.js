@@ -1,11 +1,11 @@
 /**
- * GUI + Controlador del cliente BrewLab (PBI-12: Frontend Integral).
+ * GUI + Controlador del cliente BrewLab (Rediseño Luxury Dark Espresso).
  *
  * Arquitectura:
  * - Habla con el backend EXCLUSIVAMENTE a través de `Com`.
  * - Jamás realiza llamadas `fetch` directas ni contiene lógica de persistencia.
- * - Gestiona eventos del DOM, navegación por pestañas, calculadora de ratios en vivo
- *   y renderizado reactivo de la interfaz.
+ * - Gestiona eventos del DOM, navegación flotante por pestañas, filtros pill,
+ *   calculadora de ratios en vivo y renderizado reactivo de la interfaz.
  */
 "use strict";
 
@@ -30,13 +30,13 @@
   async function pintarEstado() {
     try {
       const data = await Com.health();
-      $("estado").textContent = "OK (" + data.servicio + ", usuarios: " + data.usuarios + ")";
+      $("estado").textContent = "Activo (" + data.servicio + ", usuarios: " + data.usuarios + ")";
     } catch (e) {
-      $("estado").textContent = "ERROR: " + e.message;
+      $("estado").textContent = "Sin conexión: " + e.message;
     }
   }
 
-  // — Sistema de Pestañas —
+  // — Sistema de Pestañas Flotantes —
   function configurarTabs() {
     const tabBtns = document.querySelectorAll(".tab-btn");
     tabBtns.forEach((btn) => {
@@ -59,16 +59,41 @@
     });
   }
 
+  // — Filtros tipo Píldora para Métodos —
+  function configurarPillsMetodos() {
+    const pills = document.querySelectorAll("#pills-metodos-comunidad .pill-btn");
+    pills.forEach((pill) => {
+      pill.addEventListener("click", () => {
+        pills.forEach((p) => p.classList.remove("active"));
+        pill.classList.add("active");
+
+        const metodo = pill.getAttribute("data-metodo") || "";
+        const select = $("com-metodo");
+        if (select) {
+          select.value = metodo;
+        }
+        pintarComunidad();
+      });
+    });
+  }
+
   // — Control de Sesión y Vistas —
   function pintarSesion() {
     const sesion = Com.leerSesion();
     const dentro = !!(sesion && sesion.token && sesion.usuario);
     const admin = dentro && sesion.usuario.rol === "admin";
 
-    // Actualizar badge de usuario
-    $("sesion").textContent = dentro
-      ? sesion.usuario.email + " (" + sesion.usuario.rol + "/" + sesion.usuario.estado + ")"
-      : "sin sesión";
+    // Actualizar badge de usuario en la cabecera
+    const sesionEl = $("sesion");
+    const avatarEl = document.querySelector(".avatar-circle");
+    if (dentro) {
+      const inicial = (sesion.usuario.email || "B").charAt(0).toUpperCase();
+      if (avatarEl) avatarEl.textContent = inicial;
+      sesionEl.textContent = `${sesion.usuario.email} (${sesion.usuario.rol})`;
+    } else {
+      if (avatarEl) avatarEl.textContent = "B";
+      sesionEl.textContent = "sin sesión";
+    }
 
     $("zona-sesion").hidden = !dentro;
     $("zona-invitado").hidden = dentro;
@@ -111,8 +136,16 @@
       if (!bolsas || bolsas.length === 0) {
         contenedor.innerHTML = `
           <div class="empty-state" style="grid-column: 1 / -1;">
-            <div class="empty-state-icon">🫘</div>
-            <p>Tu despensa está vacía. Añade tu primera bolsa de café arriba.</p>
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                <line x1="6" y1="1" x2="6" y2="4"></line>
+                <line x1="10" y1="1" x2="10" y2="4"></line>
+                <line x1="14" y1="1" x2="14" y2="4"></line>
+              </svg>
+            </div>
+            <p>Tu despensa está vacía. Añade tu primera bolsa de café para comenzar.</p>
           </div>
         `;
         return;
@@ -130,7 +163,7 @@
         if (selectorExt && !esAgotada) {
           const opt = document.createElement("option");
           opt.value = b.id;
-          opt.textContent = `${b.nombre} (${b.origen}) — ${restante}g restantes`;
+          opt.textContent = `${b.nombre} (${b.origen}) — ${restante}g disponibles`;
           selectorExt.appendChild(opt);
         }
 
@@ -141,22 +174,22 @@
             <div class="item-card-header">
               <div>
                 <h4 class="item-title">${escapeHTML(b.nombre)}</h4>
-                <span class="item-subtitle">📍 ${escapeHTML(b.origen)}</span>
+                <span class="item-subtitle">${escapeHTML(b.origen)}</span>
               </div>
               <span class="badge ${esAgotada ? "badge-depleted" : "badge-active"}">
-                ${esAgotada ? "Agotada" : "Activa"}
+                ${esAgotada ? "Agotada" : "En despensa"}
               </span>
             </div>
 
             <div class="item-meta">
               <p><strong>Tostador:</strong> ${escapeHTML(b.tostador || "Desconocido")}</p>
-              <p><strong>Variedad:</strong> ${escapeHTML(b.variedad || "Variada")} | <strong>Proceso:</strong> ${escapeHTML(b.proceso || "Lavado")}</p>
+              <p><strong>Variedad:</strong> ${escapeHTML(b.variedad || "Variada")} · <strong>Proceso:</strong> ${escapeHTML(b.proceso || "Lavado")}</p>
             </div>
 
-            <div style="margin: 0.75rem 0;">
-              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600;">
-                <span>Stock restante:</span>
-                <span>${restante}g / ${inicial}g (${pct}%)</span>
+            <div style="margin: 0.85rem 0 0.5rem 0;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600;">
+                <span style="color: var(--text-muted);">Stock disponible</span>
+                <span style="color: var(--accent);">${restante}g / ${inicial}g (${pct}%)</span>
               </div>
               <div class="progress-bar-container">
                 <div class="progress-bar-fill ${esAgotada ? "depleted" : ""}" style="width: ${pct}%;"></div>
@@ -165,9 +198,13 @@
           </div>
 
           <div class="item-footer">
-            <span style="font-size: 0.8rem; color: var(--text-light);">${formatearFecha(b.creadaEn)}</span>
-            <button type="button" class="btn btn-secondary btn-sm btn-borrar-bolsa" data-id="${b.id}" style="color: var(--danger);">
-              🗑️ Borrar
+            <span style="font-size: 0.78rem; color: var(--text-muted);">${formatearFecha(b.creadaEn)}</span>
+            <button type="button" class="btn btn-danger btn-sm btn-borrar-bolsa" data-id="${b.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Borrar
             </button>
           </div>
         `;
@@ -205,10 +242,10 @@
       if (cafe > 0 && agua > 0) {
         const ratio = (agua / cafe).toFixed(1);
         ratioDisplay.textContent = "1 : " + ratio;
-        ratioHint.textContent = `(${cafe}g de café para ${agua}g de agua)`;
+        ratioHint.textContent = `${cafe}g de café molido para ${agua}g de agua vertida`;
       } else {
         ratioDisplay.textContent = "1 : --";
-        ratioHint.textContent = "Introduce café y agua para calcular el ratio en tiempo real";
+        ratioHint.textContent = "Introduce gramos de café y agua para calcular en tiempo real";
       }
     }
 
@@ -224,7 +261,15 @@
       if (!extracciones || extracciones.length === 0) {
         contenedor.innerHTML = `
           <div class="empty-state" style="grid-column: 1 / -1;">
-            <div class="empty-state-icon">⚖️</div>
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 3v18"></path>
+                <path d="M6 8l6-3 6 3"></path>
+                <path d="M6 8l-4 7h8l-4-7z"></path>
+                <path d="M18 8l-4 7h8l-4-7z"></path>
+                <path d="M4 21h16"></path>
+              </svg>
+            </div>
             <p>Aún no has registrado extracciones. Prepara una receta arriba.</p>
           </div>
         `;
@@ -234,7 +279,7 @@
       contenedor.innerHTML = "";
 
       extracciones.forEach((e) => {
-        const estrellas = "⭐".repeat(Math.max(0, Math.min(5, Number(e.puntuacion) || 0)));
+        const puntuacionNum = Number(e.puntuacion) || 0;
         const card = document.createElement("div");
         card.className = "item-card";
         card.innerHTML = `
@@ -242,32 +287,39 @@
             <div class="item-card-header">
               <div>
                 <h4 class="item-title">${escapeHTML(e.nombreCafe)}</h4>
-                <span class="item-subtitle">📍 ${escapeHTML(e.origen)}</span>
+                <span class="item-subtitle">${escapeHTML(e.origen)}</span>
               </div>
-              <span class="badge ${e.esPublica ? "badge-public" : "badge-private"}">
-                ${e.esPublica ? "🌍 Pública" : "🔒 Privada"}
-              </span>
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                ${puntuacionNum > 0 ? `<span class="badge-rating">★ ${puntuacionNum}.0</span>` : ""}
+                <span class="badge ${e.esPublica ? "badge-public" : "badge-private"}">
+                  ${e.esPublica ? "Pública" : "Privada"}
+                </span>
+              </div>
             </div>
 
-            <div style="display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0;">
-              <span class="badge badge-method">☕ ${escapeHTML(e.metodo)}</span>
-              <span style="font-weight: 700; color: var(--ratio-highlight); font-size: 0.95rem;">Ratio 1:${e.ratio}</span>
+            <div style="display: flex; gap: 0.6rem; align-items: center; margin: 0.75rem 0;">
+              <span class="badge badge-method">${escapeHTML(e.metodo)}</span>
+              <span style="font-family: var(--font-serif); font-size: 1.15rem; font-weight: 700; color: var(--accent);">
+                Ratio 1:${e.ratio}
+              </span>
             </div>
 
             <div class="item-meta">
               <p><strong>Dosis:</strong> ${e.cafeGramos}g café / ${e.aguaGramos}g agua</p>
-              <p><strong>Molienda:</strong> ${escapeHTML(e.molienda || "Media")} ${e.tiempoSegundos ? `| <strong>Tiempo:</strong> ${e.tiempoSegundos}s` : ""}</p>
+              <p><strong>Molienda:</strong> ${escapeHTML(e.molienda || "Media")} ${e.tiempoSegundos ? `· <strong>Tiempo:</strong> ${e.tiempoSegundos}s` : ""}</p>
             </div>
 
             ${e.notasSabor ? `<div class="item-notes">“${escapeHTML(e.notasSabor)}”</div>` : ""}
-
-            ${estrellas ? `<div class="stars" style="margin-top: 0.35rem;">${estrellas} (${e.puntuacion}/5)</div>` : ""}
           </div>
 
           <div class="item-footer">
-            <span style="font-size: 0.8rem; color: var(--text-light);">${formatearFecha(e.creadaEn)}</span>
-            <button type="button" class="btn btn-secondary btn-sm btn-borrar-extraccion" data-id="${e.id}" style="color: var(--danger);">
-              🗑️ Borrar
+            <span style="font-size: 0.78rem; color: var(--text-muted);">${formatearFecha(e.creadaEn)}</span>
+            <button type="button" class="btn btn-danger btn-sm btn-borrar-extraccion" data-id="${e.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              Borrar
             </button>
           </div>
         `;
@@ -303,7 +355,12 @@
       if (!recetas || recetas.length === 0) {
         contenedor.innerHTML = `
           <div class="empty-state" style="grid-column: 1 / -1;">
-            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
             <p>No se encontraron recetas públicas con los criterios seleccionados.</p>
           </div>
         `;
@@ -313,7 +370,7 @@
       contenedor.innerHTML = "";
 
       recetas.forEach((r) => {
-        const estrellas = "⭐".repeat(Math.max(0, Math.min(5, Number(r.puntuacion) || 0)));
+        const puntuacionNum = Number(r.puntuacion) || 0;
         const card = document.createElement("div");
         card.className = "item-card";
         card.innerHTML = `
@@ -321,30 +378,35 @@
             <div class="item-card-header">
               <div>
                 <h4 class="item-title">${escapeHTML(r.nombreCafe)}</h4>
-                <span class="item-subtitle">📍 ${escapeHTML(r.origen)}</span>
+                <span class="item-subtitle">${escapeHTML(r.origen)}</span>
               </div>
-              <span class="badge badge-method">☕ ${escapeHTML(r.metodo)}</span>
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                ${puntuacionNum > 0 ? `<span class="badge-rating">★ ${puntuacionNum}.0</span>` : ""}
+                <span class="badge badge-method">${escapeHTML(r.metodo)}</span>
+              </div>
             </div>
 
-            <div style="margin: 0.5rem 0;">
-              <span style="font-size: 1.1rem; font-weight: 800; color: var(--ratio-highlight);">Ratio 1:${r.ratio}</span>
-              <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 0.5rem;">(${r.cafeGramos}g café / ${r.aguaGramos}g agua)</span>
+            <div style="margin: 0.75rem 0 0.5rem 0;">
+              <span style="font-family: var(--font-serif); font-size: 1.35rem; font-weight: 700; color: var(--accent);">
+                Ratio 1:${r.ratio}
+              </span>
+              <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 0.5rem;">
+                (${r.cafeGramos}g café / ${r.aguaGramos}g agua)
+              </span>
             </div>
 
             <div class="item-meta">
-              <p><strong>Molienda:</strong> ${escapeHTML(r.molienda || "Media")} ${r.tiempoSegundos ? `| <strong>Tiempo:</strong> ${r.tiempoSegundos}s` : ""}</p>
+              <p><strong>Molienda:</strong> ${escapeHTML(r.molienda || "Media")} ${r.tiempoSegundos ? `· <strong>Tiempo:</strong> ${r.tiempoSegundos}s` : ""}</p>
             </div>
 
             ${r.notasSabor ? `<div class="item-notes">“${escapeHTML(r.notasSabor)}”</div>` : ""}
-
-            ${estrellas ? `<div class="stars">${estrellas} (${r.puntuacion}/5)</div>` : ""}
           </div>
 
           <div class="item-footer">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">
-              👤 Barista: <strong>${escapeHTML(r.usuarioEmail.split("@")[0])}</strong>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">
+              Barista: <strong style="color: var(--text-main);">${escapeHTML(r.usuarioEmail.split("@")[0])}</strong>
             </span>
-            <span style="font-size: 0.8rem; color: var(--text-light);">${formatearFecha(r.creadaEn)}</span>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">${formatearFecha(r.creadaEn)}</span>
           </div>
         `;
         contenedor.appendChild(card);
@@ -370,7 +432,7 @@
       $("metric-usuarios").textContent = m.totalUsuarios || 0;
       $("metric-metodo-popular").textContent = m.metodoMasPopular || "-";
       $("metric-origen-popular").textContent = m.origenMasConsumido || "-";
-      $("metric-promedio-puntuacion").textContent = (m.promedioPuntuacion || 0) + " ⭐";
+      $("metric-promedio-puntuacion").textContent = (m.promedioPuntuacion || 0) + " ★";
     } catch (e) {
       console.error("Error al cargar métricas de admin:", e);
     }
@@ -388,12 +450,17 @@
           const item = document.createElement("div");
           item.className = "item-card";
           item.innerHTML = `
-            <div class="item-card-header">
-              <div>
-                <strong>${escapeHTML(r.nombreCafe)}</strong> (${escapeHTML(r.metodo)})
-                <div style="font-size: 0.8rem; color: var(--text-muted);">Por: ${escapeHTML(r.usuarioEmail)} | Ratio: 1:${r.ratio}</div>
+            <div>
+              <div class="item-card-header">
+                <div>
+                  <h4 class="item-title" style="font-size: 1.1rem;">${escapeHTML(r.nombreCafe)}</h4>
+                  <span class="item-subtitle">${escapeHTML(r.metodo)} · Ratio 1:${r.ratio}</span>
+                </div>
+                <span class="badge badge-public">Pública</span>
               </div>
-              <span class="badge badge-public">Pública</span>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Autor: <strong>${escapeHTML(r.usuarioEmail)}</strong>
+              </p>
             </div>
             <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
               <button type="button" class="btn btn-secondary btn-sm btn-despublicar">Despublicar</button>
@@ -404,7 +471,7 @@
           item.querySelector(".btn-despublicar").addEventListener("click", async () => {
             try {
               await Com.moderarReceta(r.id, "despublicar");
-              mostrarMsg("admin-mod-msg", "Receta despublicada.");
+              mostrarMsg("admin-mod-msg", "Receta despublicada con éxito.");
               pintarAdmin();
               pintarComunidad();
             } catch (err) {
@@ -416,7 +483,7 @@
             if (confirm("¿Seguro que deseas eliminar esta receta permanentemente?")) {
               try {
                 await Com.moderarReceta(r.id, "eliminar");
-                mostrarMsg("admin-mod-msg", "Receta eliminada.");
+                mostrarMsg("admin-mod-msg", "Receta eliminada de la plataforma.");
                 pintarAdmin();
                 pintarComunidad();
               } catch (err) {
@@ -442,8 +509,8 @@
         li.className = "user-list-item";
         li.innerHTML = `
           <span>
-            <strong>${escapeHTML(u.email)}</strong>
-            <span class="badge ${u.rol === "admin" ? "badge-method" : "badge-depleted"}" style="margin-left: 0.5rem;">${u.rol}</span>
+            <strong style="color: var(--text-title);">${escapeHTML(u.email)}</strong>
+            <span class="badge ${u.rol === "admin" ? "badge-public" : "badge-depleted"}" style="margin-left: 0.5rem;">${u.rol}</span>
             <span style="font-size: 0.8rem; color: var(--text-muted);">(${u.estado})</span>
           </span>
           <button type="button" class="btn btn-danger btn-sm btn-borrar-usuario">Eliminar</button>
@@ -474,12 +541,13 @@
   async function inicializar() {
     await pintarEstado();
     configurarTabs();
+    configurarPillsMetodos();
     configurarCalculadoraRatio();
 
     // Recoger token de OAuth si volvemos de GitHub (?token=...)
     const params = new URLSearchParams(window.location.search);
     if (params.get("oauth_error")) {
-      mostrarMsg("log-msg", "ERROR con GitHub: " + params.get("oauth_error"), true);
+      mostrarMsg("log-msg", "Error de autenticación con GitHub: " + params.get("oauth_error"), true);
     }
     if (params.get("token")) {
       Com.guardarSesion({
@@ -554,7 +622,7 @@
         gramosIniciales: Number($("bolsa-gramos").value),
       };
       await Com.crearBolsa(datos);
-      mostrarMsg("bolsa-msg", "Bolsa añadida a la despensa.");
+      mostrarMsg("bolsa-msg", "Bolsa añadida a tu despensa.");
       $("form-bolsa").reset();
       pintarBolsas();
     } catch (e) {
@@ -584,7 +652,7 @@
       // Limpiar formulario y resetear display de ratio
       $("form-extraccion").reset();
       $("calc-ratio-display").textContent = "1 : --";
-      $("calc-ratio-hint").textContent = "Introduce café y agua para calcular el ratio en tiempo real";
+      $("calc-ratio-hint").textContent = "Introduce gramos de café y agua para calcular en tiempo real";
 
       // Refrescar vistas afectadas
       pintarExtracciones();
@@ -606,6 +674,10 @@
   $("btn-com-limpiar").addEventListener("click", () => {
     if ($("com-buscar")) $("com-buscar").value = "";
     if ($("com-metodo")) $("com-metodo").value = "";
+    const pills = document.querySelectorAll("#pills-metodos-comunidad .pill-btn");
+    pills.forEach((p, idx) => {
+      p.classList.toggle("active", idx === 0);
+    });
     pintarComunidad();
   });
 
