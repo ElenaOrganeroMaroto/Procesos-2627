@@ -3,26 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>☕ BrewLab — Specialty Coffee (Procesos-2627)</title>
+  <title>BrewLab — Specialty Coffee (Procesos-2627)</title>
+  <!-- Google Fonts: Playfair Display + Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./estilos.css" />
 </head>
 <body>
-  <!-- Header principal -->
+  <!-- Header principal Luxury Dark Espresso -->
   <header class="app-header">
     <div class="header-inner">
       <div class="brand-container">
-        <h1 class="brand-title">☕ BrewLab</h1>
-        <span class="brand-subtitle">Specialty Coffee — Procesos-2627</span>
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+            <line x1="6" y1="1" x2="6" y2="4"></line>
+            <line x1="10" y1="1" x2="10" y2="4"></line>
+            <line x1="14" y1="1" x2="14" y2="4"></line>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">BrewLab</h1>
+          <span class="brand-subtitle">Specialty Coffee · Procesos-2627</span>
+        </div>
       </div>
 
-      <div class="header-status">
+      <!-- Indicador con pulso verde del servidor -->
+      <div class="server-indicator">
+        <span class="pulse-dot"></span>
         <span>Servidor:</span>
         <strong id="estado">cargando…</strong>
       </div>
 
+      <!-- Barra de usuario y cierre de sesión -->
       <div class="user-bar">
         <span class="user-badge" id="badge-usuario">
-          👤 <span id="sesion">sin sesión</span>
+          <span class="avatar-circle">B</span>
+          <span class="greeting-text">Hola, Barista</span>
+          <span id="sesion">sin sesión</span>
         </span>
         <span id="zona-sesion" hidden>
           <button id="btn-logout" type="button" class="btn btn-secondary btn-sm">Cerrar sesión</button>
@@ -38,21 +58,21 @@
     <section id="zona-invitado" class="grid-2">
       <!-- Registro local -->
       <div class="card" id="zona-registro">
-        <h2 class="card-title">📝 Crear cuenta</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-          Únete a la comunidad de café de especialidad de BrewLab.
+        <h2 class="card-title">Crear cuenta</h2>
+        <p class="card-subtitle">
+          Únete a la plataforma boutique de recetas y control de café de especialidad.
         </p>
         <form id="form-registro">
           <div class="form-group">
-            <label for="reg-email">Correo electrónico *</label>
-            <input id="reg-email" type="email" placeholder="ejemplo@cafe.com" required />
+            <label for="reg-email">Correo electrónico</label>
+            <input id="reg-email" type="email" placeholder="barista@especialidad.com" required />
           </div>
           <div class="form-group">
             <label for="reg-nombre">Nombre de barista (opcional)</label>
             <input id="reg-nombre" type="text" placeholder="Tu nombre o alias" />
           </div>
           <div class="form-group">
-            <label for="reg-pass">Contraseña (mínimo 8 caracteres) *</label>
+            <label for="reg-pass">Contraseña (mínimo 8 caracteres)</label>
             <input id="reg-pass" type="password" placeholder="••••••••" required minlength="8" />
           </div>
           <button type="submit" class="btn btn-primary btn-block">Registrarse</button>
@@ -62,30 +82,30 @@
 
       <!-- Login local & OAuth -->
       <div class="card" id="zona-login">
-        <h2 class="card-title">☕ Iniciar sesión</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+        <h2 class="card-title">Iniciar sesión</h2>
+        <p class="card-subtitle">
           Accede a tu despensa, recetas y diario de extracciones.
         </p>
         <form id="form-login">
           <div class="form-group">
             <label for="log-email">Correo electrónico</label>
-            <input id="log-email" type="email" placeholder="ejemplo@cafe.com" required />
+            <input id="log-email" type="email" placeholder="barista@especialidad.com" required />
           </div>
           <div class="form-group">
             <label for="log-pass">Contraseña</label>
             <input id="log-pass" type="password" placeholder="••••••••" required />
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Entrar a BrewLab</button>
+          <button type="submit" class="btn btn-primary btn-block">Acceder a BrewLab</button>
         </form>
-        <div style="margin: 1.25rem 0; text-align: center; position: relative;">
+        <div style="margin: 1.5rem 0; text-align: center; position: relative;">
           <hr style="border: none; border-top: 1px solid var(--border);" />
-          <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--surface); padding: 0 10px; font-size: 0.8rem; color: var(--text-light);">o entra con</span>
+          <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--surface); padding: 0 12px; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">o accede con</span>
         </div>
         <div>
           <a href="/api/auth/oauth/github" style="text-decoration: none;">
             <button type="button" class="btn btn-github">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-              Entrar con GitHub
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              Continuar con GitHub
             </button>
           </a>
         </div>
@@ -97,14 +117,16 @@
          ZONA AUTENTICADA (Con sesión)
          ========================================== -->
     <section id="zona-autenticado" hidden>
-      <!-- Navegación por pestañas -->
-      <nav class="tabs-nav">
-        <button type="button" class="tab-btn active" data-tab="tab-despensa">🫘 Mi Despensa</button>
-        <button type="button" class="tab-btn" data-tab="tab-extracciones">⚖️ Diario y Calculadora</button>
-        <button type="button" class="tab-btn" data-tab="tab-comunidad">🌍 Comunidad de Recetas</button>
-        <button type="button" class="tab-btn" id="nav-admin" data-tab="tab-admin" hidden>🛡️ Administración</button>
-        <button type="button" class="tab-btn" data-tab="tab-cuenta">⚙️ Mi Cuenta</button>
-      </nav>
+      <!-- Floating Navigation Dock -->
+      <div class="floating-nav-container">
+        <nav class="tabs-nav">
+          <button type="button" class="tab-btn active" data-tab="tab-despensa">Mi Despensa</button>
+          <button type="button" class="tab-btn" data-tab="tab-extracciones">Diario y Calculadora</button>
+          <button type="button" class="tab-btn" data-tab="tab-comunidad">Comunidad</button>
+          <button type="button" class="tab-btn" id="nav-admin" data-tab="tab-admin" hidden>Administración</button>
+          <button type="button" class="tab-btn" data-tab="tab-cuenta">Mi Cuenta</button>
+        </nav>
+      </div>
 
       <!-- -----------------------------------------
            1. PESTAÑA: MI DESPENSA
@@ -112,7 +134,8 @@
       <div id="tab-despensa" class="tab-content">
         <!-- Formulario nueva bolsa -->
         <div class="card">
-          <h2 class="card-title">➕ Añadir bolsa de café a la despensa</h2>
+          <h2 class="card-title">Añadir bolsa a la despensa</h2>
+          <p class="card-subtitle">Registra un nuevo café de especialidad para controlar su inventario y recetas.</p>
           <form id="form-bolsa">
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
@@ -128,11 +151,11 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="bolsa-tostador">Tostador</label>
-                <input id="bolsa-tostador" type="text" placeholder="ej. San Agustín, Nomad" />
+                <input id="bolsa-tostador" type="text" placeholder="ej. Nomad, San Agustín, D’Origen" />
               </div>
               <div class="form-group">
                 <label for="bolsa-variedad">Variedad</label>
-                <input id="bolsa-variedad" type="text" placeholder="ej. Geisha, Bourbon, Caturra" />
+                <input id="bolsa-variedad" type="text" placeholder="ej. Geisha, Bourbon, Pacamara" />
               </div>
               <div class="form-group">
                 <label for="bolsa-proceso">Proceso</label>
@@ -150,13 +173,15 @@
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary">Guardar en Despensa</button>
+            <button type="submit" class="btn btn-primary">Añadir a la Despensa</button>
           </form>
           <div id="bolsa-msg" class="msg"></div>
         </div>
 
         <!-- Listado de bolsas -->
-        <h3 style="margin-bottom: 1rem; color: var(--primary);">☕ Bolsas en mi despensa</h3>
+        <div class="section-heading">
+          <h3>Bolsas en mi despensa</h3>
+        </div>
         <div id="lista-bolsas" class="grid-cards">
           <!-- Las tarjetas de bolsas se inyectan dinámicamente -->
         </div>
@@ -167,7 +192,8 @@
            ----------------------------------------- -->
       <div id="tab-extracciones" class="tab-content" hidden>
         <div class="card">
-          <h2 class="card-title">⚖️ Nueva Extracción & Calculadora de Ratio</h2>
+          <h2 class="card-title">Nueva Extracción & Calculadora de Ratio</h2>
+          <p class="card-subtitle">Registra tu extracción y calcula la relación café/agua en tiempo real.</p>
           <form id="form-extraccion">
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
@@ -191,14 +217,14 @@
               </div>
             </div>
 
-            <!-- Cantidades y Calculadora en Vivo -->
+            <!-- Cantidades de dosis y agua -->
             <div class="form-row">
               <div class="form-group">
-                <label for="ext-cafe">Gramos de café *</label>
+                <label for="ext-cafe">Café molido (gramos) *</label>
                 <input id="ext-cafe" type="number" step="0.1" min="0.1" placeholder="ej. 15" required />
               </div>
               <div class="form-group">
-                <label for="ext-agua">Gramos de agua *</label>
+                <label for="ext-agua">Agua (gramos / ml) *</label>
                 <input id="ext-agua" type="number" step="1" min="1" placeholder="ej. 250" required />
               </div>
               <div class="form-group">
@@ -219,36 +245,36 @@
 
             <!-- Caja destacada Calculadora de Ratio en vivo -->
             <div class="calculator-box">
-              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Ratio Calculado</span>
+              <div class="ratio-title-tag">Ratio Calculado en Vivo</div>
               <div class="ratio-display" id="calc-ratio-display">1 : --</div>
               <div class="ratio-hint" id="calc-ratio-hint">Introduce café y agua para calcular el ratio en tiempo real</div>
             </div>
 
             <div class="form-row">
               <div class="form-group" style="flex: 2;">
-                <label for="ext-notas">Notas de cata / sabor</label>
-                <input id="ext-notas" type="text" placeholder="ej. Jazmín, melocotón, acidez brillante y final dulce" />
+                <label for="ext-notas">Notas de cata y sensaciones</label>
+                <input id="ext-notas" type="text" placeholder="ej. Jazmín, bergamota, acidez cítrica y posgusto dulce" />
               </div>
               <div class="form-group" style="flex: 1;">
-                <label for="ext-puntuacion">Puntuación</label>
+                <label for="ext-puntuacion">Valoración</label>
                 <select id="ext-puntuacion">
-                  <option value="5">⭐⭐⭐⭐⭐ (5 - Excelente)</option>
-                  <option value="4" selected>⭐⭐⭐⭐ (4 - Muy buena)</option>
-                  <option value="3">⭐⭐⭐ (3 - Buena)</option>
-                  <option value="2">⭐⭐ (2 - Mejorable)</option>
-                  <option value="1">⭐ (1 - Mala)</option>
+                  <option value="5">★ 5 - Extraordinaria</option>
+                  <option value="4" selected>★ 4 - Muy buena</option>
+                  <option value="3">★ 3 - Buena</option>
+                  <option value="2">★ 2 - Mejorable</option>
+                  <option value="1">★ 1 - Insuficiente</option>
                 </select>
               </div>
             </div>
 
             <div class="checkbox-group">
               <input type="checkbox" id="ext-publica" />
-              <label for="ext-publica" style="margin-bottom: 0; cursor: pointer;">
-                🌍 Compartir esta receta públicamente con la comunidad BrewLab
+              <label for="ext-publica" style="margin-bottom: 0; cursor: pointer; text-transform: none; color: var(--text-main);">
+                Compartir esta receta públicamente con la comunidad BrewLab
               </label>
             </div>
 
-            <div style="margin-top: 1.25rem;">
+            <div style="margin-top: 1.5rem;">
               <button type="submit" class="btn btn-primary">Registrar Extracción</button>
             </div>
           </form>
@@ -256,7 +282,9 @@
         </div>
 
         <!-- Listado de extracciones del usuario -->
-        <h3 style="margin-bottom: 1rem; color: var(--primary);">📖 Mis Extracciones Registradas</h3>
+        <div class="section-heading">
+          <h3>Mis extracciones registradas</h3>
+        </div>
         <div id="lista-extracciones" class="grid-cards">
           <!-- Las tarjetas de extracciones se inyectan dinámicamente -->
         </div>
@@ -267,15 +295,26 @@
            ----------------------------------------- -->
       <div id="tab-comunidad" class="tab-content" hidden>
         <div class="card">
-          <h2 class="card-title">🌍 Explorar Recetas de la Comunidad</h2>
-          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-            Descubre recetas compartidas por otros baristas y amantes del café de especialidad.
+          <h2 class="card-title">Comunidad de Recetas</h2>
+          <p class="card-subtitle">
+            Explora recetas compartidas por otros baristas y entusiastas del café de especialidad.
           </p>
 
-          <!-- Barra de búsqueda y filtros -->
+          <!-- Píldoras horizontales de filtrado rápido por método -->
+          <div class="pills-container" id="pills-metodos-comunidad">
+            <button type="button" class="pill-btn active" data-metodo="">Todos</button>
+            <button type="button" class="pill-btn" data-metodo="V60">V60</button>
+            <button type="button" class="pill-btn" data-metodo="Espresso">Espresso</button>
+            <button type="button" class="pill-btn" data-metodo="Aeropress">Aeropress</button>
+            <button type="button" class="pill-btn" data-metodo="Chemex">Chemex</button>
+            <button type="button" class="pill-btn" data-metodo="Prensa Francesa">Prensa Francesa</button>
+            <button type="button" class="pill-btn" data-metodo="Cold Brew">Cold Brew</button>
+          </div>
+
+          <!-- Barra de búsqueda por texto y selector -->
           <div class="search-bar">
-            <input type="text" id="com-buscar" placeholder="Buscar por café, origen o notas..." />
-            <select id="com-metodo">
+            <input type="text" id="com-buscar" placeholder="Buscar por café, origen o notas sensoriales..." />
+            <select id="com-metodo" style="display: none;">
               <option value="">Todos los métodos</option>
               <option value="V60">V60</option>
               <option value="Espresso">Espresso</option>
@@ -286,8 +325,8 @@
               <option value="Moka">Moka</option>
               <option value="Cold Brew">Cold Brew</option>
             </select>
-            <button type="button" id="btn-com-buscar" class="btn btn-secondary">🔍 Filtrar</button>
-            <button type="button" id="btn-com-limpiar" class="btn btn-secondary">Limpiar</button>
+            <button type="button" id="btn-com-buscar" class="btn btn-secondary">Filtrar</button>
+            <button type="button" id="btn-com-limpiar" class="btn btn-secondary">Restablecer</button>
           </div>
         </div>
 
@@ -302,7 +341,8 @@
       <div id="tab-admin" class="tab-content" hidden>
         <section id="zona-admin">
           <!-- Métricas agregadas de la plataforma -->
-          <h2 class="card-title" style="margin-bottom: 1rem;">📊 Métricas Globales de la Plataforma</h2>
+          <h2 class="card-title" style="margin-bottom: 0.25rem;">Métricas de la Plataforma</h2>
+          <p class="card-subtitle">Estadísticas agregadas de actividad y consumo en tiempo real.</p>
           <div class="grid-metrics" id="grid-metricas">
             <div class="metric-box">
               <div class="metric-number" id="metric-cafe-consumido">0g</div>
@@ -321,22 +361,23 @@
               <div class="metric-label">Usuarios Activos</div>
             </div>
             <div class="metric-box">
-              <div class="metric-number" id="metric-metodo-popular" style="font-size: 1.3rem;">-</div>
+              <div class="metric-number" id="metric-metodo-popular" style="font-size: 1.5rem;">-</div>
               <div class="metric-label">Método Favorito</div>
             </div>
             <div class="metric-box">
-              <div class="metric-number" id="metric-origen-popular" style="font-size: 1.3rem;">-</div>
+              <div class="metric-number" id="metric-origen-popular" style="font-size: 1.5rem;">-</div>
               <div class="metric-label">Origen Popular</div>
             </div>
             <div class="metric-box">
-              <div class="metric-number" id="metric-promedio-puntuacion">0 ⭐</div>
+              <div class="metric-number" id="metric-promedio-puntuacion">0 ★</div>
               <div class="metric-label">Valoración Media</div>
             </div>
           </div>
 
           <!-- Moderación de recetas comunitarias -->
-          <div class="card" style="margin-top: 1.5rem;">
-            <h3 class="card-title">🛡️ Moderación de Recetas Públicas</h3>
+          <div class="card" style="margin-top: 2rem;">
+            <h3 class="card-title">Moderación de Recetas Públicas</h3>
+            <p class="card-subtitle">Gestiona o despublica recetas que infrinjan las normas de la comunidad.</p>
             <div id="admin-mod-msg" class="msg"></div>
             <div id="lista-moderacion" class="grid-cards">
               <!-- Lista de recetas a moderar -->
@@ -344,8 +385,9 @@
           </div>
 
           <!-- Gestión de usuarios -->
-          <div class="card" style="margin-top: 1.5rem;">
-            <h3 class="card-title">👥 Gestión de Usuarios</h3>
+          <div class="card" style="margin-top: 2rem;">
+            <h3 class="card-title">Gestión de Usuarios</h3>
+            <p class="card-subtitle">Administra cuentas registradas y permisos de acceso.</p>
             <ul id="lista-usuarios" class="user-list"></ul>
             <div id="admin-msg" class="msg"></div>
           </div>
@@ -357,16 +399,17 @@
            ----------------------------------------- -->
       <div id="tab-cuenta" class="tab-content" hidden>
         <div class="card" id="zona-cuenta">
-          <h2 class="card-title">⚙️ Mi Cuenta</h2>
-          <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem;">
-            <p><strong>Email:</strong> <span id="cuenta-email">-</span></p>
-            <p><strong>Rol:</strong> <span id="cuenta-rol">-</span></p>
+          <h2 class="card-title">Mi Cuenta</h2>
+          <p class="card-subtitle">Información del perfil y ajustes de la cuenta.</p>
+          <div style="background: var(--surface-subtle); padding: 1.5rem; border-radius: 14px; margin-bottom: 2rem; border: 1px solid var(--border);">
+            <p style="margin-bottom: 0.5rem;"><strong>Email:</strong> <span id="cuenta-email" style="color: var(--accent);">-</span></p>
+            <p style="margin-bottom: 0.5rem;"><strong>Rol en el sistema:</strong> <span id="cuenta-rol">-</span></p>
             <p><strong>Estado:</strong> <span id="cuenta-estado">-</span></p>
           </div>
 
           <div style="border-top: 1px solid var(--border); padding-top: 1.5rem;">
-            <h4 style="color: var(--danger); margin-bottom: 0.5rem;">Zona de peligro</h4>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
+            <h4 style="color: #f87171; margin-bottom: 0.5rem; font-family: var(--font-serif); font-size: 1.15rem;">Zona de peligro</h4>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
               Al borrar tu cuenta, se cerrará tu sesión y no podrás volver a registrarte con este mismo correo.
             </p>
             <button id="btn-borrar-cuenta" type="button" class="btn btn-danger">Eliminar mi cuenta</button>
