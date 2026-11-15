@@ -121,6 +121,7 @@
       <div class="floating-nav-container">
         <nav class="tabs-nav">
           <button type="button" class="tab-btn active" data-tab="tab-despensa">Mi Despensa</button>
+          <button type="button" class="tab-btn" data-tab="tab-descubrir">Descubrir Café</button>
           <button type="button" class="tab-btn" data-tab="tab-extracciones">Diario y Calculadora</button>
           <button type="button" class="tab-btn" data-tab="tab-comunidad">Comunidad</button>
           <button type="button" class="tab-btn" id="nav-admin" data-tab="tab-admin" hidden>Administración</button>
@@ -188,9 +189,110 @@
       </div>
 
       <!-- -----------------------------------------
-           2. PESTAÑA: DIARIO Y CALCULADORA DE RATIO
+           2. PESTAÑA: DESCUBRIR CAFÉ (Estilo Santo Amaro)
+           ----------------------------------------- -->
+      <div id="tab-descubrir" class="tab-content" hidden>
+        <div class="card">
+          <h2 class="card-title">Descubre tu Café Ideal</h2>
+          <p class="card-subtitle">
+            Encuentra el café de especialidad perfecto según tus preferencias y cafetera sin tecnicismos complejos.
+          </p>
+
+          <div class="filter-sections-container">
+            <!-- 1. ¿Qué café tomas? -->
+            <div class="filter-group-block">
+              <span class="filter-label">¿Qué café tomas?</span>
+              <div class="pills-container" data-filter="cafeina" id="filter-pills-cafeina">
+                <button type="button" class="pill-btn active" data-val="">Todos</button>
+                <button type="button" class="pill-btn" data-val="normal">Normal</button>
+                <button type="button" class="pill-btn" data-val="descafeinado">Descafeinado</button>
+              </div>
+            </div>
+
+            <!-- 2. ¿Cómo te gusta tomarlo? -->
+            <div class="filter-group-block">
+              <span class="filter-label">¿Cómo te gusta tomarlo?</span>
+              <div class="pills-container" data-filter="tipoConsumo" id="filter-pills-consumo">
+                <button type="button" class="pill-btn active" data-val="">Todos</button>
+                <button type="button" class="pill-btn" data-val="solo">Solo</button>
+                <button type="button" class="pill-btn" data-val="con_leche">Con leche</button>
+                <button type="button" class="pill-btn" data-val="frio">Café frío</button>
+              </div>
+            </div>
+
+            <!-- 3. ¿Qué cafetera tienes en casa? -->
+            <div class="filter-group-block">
+              <span class="filter-label">¿Qué cafetera tienes en casa?</span>
+              <div class="pills-container" data-filter="cafetera" id="filter-pills-cafetera">
+                <button type="button" class="pill-btn active" data-val="">Todas</button>
+                <button type="button" class="pill-btn" data-val="italiana">Cafetera Italiana</button>
+                <button type="button" class="pill-btn" data-val="prensa">Prensa Francesa</button>
+                <button type="button" class="pill-btn" data-val="espresso">Espresso</button>
+                <button type="button" class="pill-btn" data-val="superautomatica">Superautomática</button>
+                <button type="button" class="pill-btn" data-val="filtro">Filtro: V60/Chemex</button>
+              </div>
+            </div>
+
+            <!-- 4. Perfil de sabor -->
+            <div class="filter-group-block">
+              <span class="filter-label">Perfil de sabor</span>
+              <div class="pills-container" data-filter="perfilSabor" id="filter-pills-sabor">
+                <button type="button" class="pill-btn active" data-val="">Todos</button>
+                <button type="button" class="pill-btn" data-val="afrutado">Ácido y afrutado</button>
+                <button type="button" class="pill-btn" data-val="achocolatado">Achocolatado</button>
+                <button type="button" class="pill-btn" data-val="especiado">Complejo y especiado</button>
+              </div>
+            </div>
+
+            <!-- 5. Intensidad -->
+            <div class="filter-group-block">
+              <span class="filter-label">Intensidad</span>
+              <div class="pills-container" data-filter="intensidad" id="filter-pills-intensidad">
+                <button type="button" class="pill-btn active" data-val="">Todas</button>
+                <button type="button" class="pill-btn" data-val="suave">Suave</button>
+                <button type="button" class="pill-btn" data-val="media">Media</button>
+                <button type="button" class="pill-btn" data-val="intensa">Intensa</button>
+              </div>
+            </div>
+          </div>
+          <div id="descubrir-msg" class="msg"></div>
+        </div>
+
+        <div class="section-heading">
+          <h3>Cafés de especialidad recomendados</h3>
+        </div>
+        <div id="grid-catalogo" class="grid-cards">
+          <!-- Las tarjetas de café recomendado se inyectan dinámicamente -->
+        </div>
+      </div>
+
+      <!-- -----------------------------------------
+           3. PESTAÑA: DIARIO Y CALCULADORA DE RATIO
            ----------------------------------------- -->
       <div id="tab-extracciones" class="tab-content" hidden>
+        <!-- Widget Visual Consumo Semanal (últimos 7 días) -->
+        <div class="card weekly-widget" id="widget-consumo-semanal" style="margin-bottom: 2rem;">
+          <div class="weekly-widget-header">
+            <div>
+              <span class="weekly-tag">Actividad de los últimos 7 días</span>
+              <h3 class="card-title" style="margin-top: 0.25rem;">Consumo Semanal</h3>
+            </div>
+            <div class="weekly-total-badge">
+              <strong id="weekly-total-gramos">0g</strong>
+              <span>café consumido</span>
+            </div>
+          </div>
+          <!-- Gráfica minimalista de barras -->
+          <div class="weekly-chart" id="weekly-chart-bars">
+            <!-- Barras generadas dinámicamente -->
+          </div>
+          <!-- Reparto por métodos y métricas económicas opcionales -->
+          <div class="weekly-footer" id="weekly-methods-breakdown">
+            <!-- Desglose por métodos -->
+          </div>
+          <div id="weekly-economic-summary" class="economic-summary" style="display: none;"></div>
+        </div>
+
         <div class="card">
           <h2 class="card-title">Nueva Extracción & Calculadora de Ratio</h2>
           <p class="card-subtitle">Registra tu extracción y calcula la relación café/agua en tiempo real.</p>
@@ -205,13 +307,13 @@
               <div class="form-group" style="flex: 1.5;">
                 <label for="ext-metodo">Método de preparación *</label>
                 <select id="ext-metodo" required>
-                  <option value="V60">V60</option>
+                  <option value="V60">Filtro: V60</option>
                   <option value="Espresso">Espresso</option>
+                  <option value="Cafetera Italiana">Cafetera Italiana (Moka)</option>
                   <option value="Aeropress">Aeropress</option>
                   <option value="Prensa Francesa">Prensa Francesa</option>
                   <option value="Chemex">Chemex</option>
                   <option value="Kalita Wave">Kalita Wave</option>
-                  <option value="Moka">Cafetera Moka</option>
                   <option value="Cold Brew">Cold Brew</option>
                 </select>
               </div>
@@ -221,15 +323,23 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="ext-cafe">Café molido (gramos) *</label>
-                <input id="ext-cafe" type="number" step="0.1" min="0.1" placeholder="ej. 15" required />
+                <input id="ext-cafe" type="number" step="0.1" min="0.1" placeholder="15" required />
               </div>
               <div class="form-group">
-                <label for="ext-agua">Agua (gramos / ml) *</label>
-                <input id="ext-agua" type="number" step="1" min="1" placeholder="ej. 250" required />
+                <label for="ext-agua" id="lbl-ext-agua">Agua vertida sobre filtro (g) *</label>
+                <input id="ext-agua" type="number" step="1" min="1" placeholder="250" required />
+                <div id="moka-dosis-container" style="display: none; margin-top: 0.45rem;">
+                  <span style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px;">Capacidad cafetera:</span>
+                  <div class="pills-container" id="pills-moka-dosis">
+                    <button type="button" class="pill-btn pill-btn-sm" data-agua="90" data-cafe="10">1-2 tazas (~90g)</button>
+                    <button type="button" class="pill-btn pill-btn-sm" data-agua="130" data-cafe="15">3 tazas (~130g)</button>
+                    <button type="button" class="pill-btn pill-btn-sm" data-agua="240" data-cafe="26">6 tazas (~240g)</button>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label for="ext-tiempo">Tiempo (segundos)</label>
-                <input id="ext-tiempo" type="number" min="0" placeholder="ej. 180" />
+                <input id="ext-tiempo" type="number" min="0" placeholder="180" />
               </div>
               <div class="form-group">
                 <label for="ext-molienda">Molienda</label>
@@ -237,6 +347,11 @@
                   <option value="Fina">Fina (Espresso)</option>
                   <option value="Media-Fina" selected>Media-Fina (V60 / Aeropress)</option>
                   <option value="Media">Media (Drip / Chemex)</option>
+                  <option value="Media-Gruesa">Media-Gruesa (Kalita)</option>
+                  <option value="Gruesa">Gruesa (Prensa Francesa / Cold Brew)</option>
+                </select>
+              </div>
+            </div>
                   <option value="Media-Gruesa">Media-Gruesa (Kalita)</option>
                   <option value="Gruesa">Gruesa (Prensa Francesa / Cold Brew)</option>
                 </select>
@@ -405,6 +520,14 @@
             <p style="margin-bottom: 0.5rem;"><strong>Email:</strong> <span id="cuenta-email" style="color: var(--accent);">-</span></p>
             <p style="margin-bottom: 0.5rem;"><strong>Rol en el sistema:</strong> <span id="cuenta-rol">-</span></p>
             <p><strong>Estado:</strong> <span id="cuenta-estado">-</span></p>
+          </div>
+
+          <!-- Ajuste Métricas Económicas Opcionales (desactivado por defecto) -->
+          <div class="checkbox-group" style="margin-bottom: 2rem; padding: 1.25rem; background: var(--surface-subtle); border-radius: 14px; border: 1px solid var(--border);">
+            <input type="checkbox" id="chk-metricas-economicas" />
+            <label for="chk-metricas-economicas" style="margin-bottom: 0; cursor: pointer; text-transform: none; color: var(--text-main); font-weight: 500;">
+              Activar cálculo de coste por taza y ahorro
+            </label>
           </div>
 
           <div style="border-top: 1px solid var(--border); padding-top: 1.5rem;">

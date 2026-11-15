@@ -1,11 +1,12 @@
 /**
- * GUI + Controlador del cliente BrewLab (Rediseño Luxury Dark Espresso).
+ * GUI + Controlador del cliente BrewLab (Rediseño Luxury Dark Espresso V2.0).
  *
  * Arquitectura:
  * - Habla con el backend EXCLUSIVAMENTE a través de `Com`.
- * - Jamás realiza llamadas `fetch` directas ni contiene lógica de persistencia.
- * - Gestiona eventos del DOM, navegación flotante por pestañas, filtros pill,
- *   calculadora de ratios en vivo y renderizado reactivo de la interfaz.
+ * - Jamás realiza llamadas `fetch` directas ni contiene persistencia.
+ * - Gestiona eventos del DOM, navegación dock, catálogo con filtros Santo Amaro,
+ *   formulario inteligente por método, recetario con enlaces externos y carga automática,
+ *   gráfica semanal de consumo minimalista y copia de ficha de barista.
  */
 "use strict";
 
@@ -26,6 +27,24 @@
     }
   }
 
+  // Toast flotante no intrusivo para compartir ficha
+  function mostrarToast(texto) {
+    const existente = document.querySelector(".toast-barista");
+    if (existente) existente.remove();
+
+    const toast = document.createElement("div");
+    toast.className = "toast-barista";
+    toast.textContent = texto;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(20px)";
+      setTimeout(() => toast.remove(), 400);
+    }, 2800);
+  }
+
   // — Estado del Servidor —
   async function pintarEstado() {
     try {
@@ -37,29 +56,38 @@
   }
 
   // — Sistema de Pestañas Flotantes —
+  function cambiarTab(targetTab) {
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    tabBtns.forEach((b) => b.classList.toggle("active", b.getAttribute("data-tab") === targetTab));
+
+    document.querySelectorAll(".tab-content").forEach((panel) => {
+      panel.hidden = panel.id !== targetTab;
+    });
+
+    if (targetTab === "tab-descubrir") {
+      pintarCatalogo();
+    } else if (targetTab === "tab-extracciones") {
+      pintarExtracciones();
+      pintarConsumoSemanal();
+    } else if (targetTab === "tab-comunidad") {
+      pintarComunidad();
+    } else if (targetTab === "tab-admin") {
+      pintarAdmin();
+    } else if (targetTab === "tab-despensa") {
+      pintarBolsas();
+    }
+  }
+
   function configurarTabs() {
     const tabBtns = document.querySelectorAll(".tab-btn");
     tabBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
-        const targetTab = btn.getAttribute("data-tab");
-        tabBtns.forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
-
-        document.querySelectorAll(".tab-content").forEach((panel) => {
-          panel.hidden = panel.id !== targetTab;
-        });
-
-        // Refrescar contenido si es necesario al entrar en la pestaña
-        if (targetTab === "tab-comunidad") {
-          pintarComunidad();
-        } else if (targetTab === "tab-admin") {
-          pintarAdmin();
-        }
+        cambiarTab(btn.getAttribute("data-tab"));
       });
     });
   }
 
-  // — Filtros tipo Píldora para Métodos —
+  // — Filtros tipo Píldora para Métodos en Comunidad —
   function configurarPillsMetodos() {
     const pills = document.querySelectorAll("#pills-metodos-comunidad .pill-btn");
     pills.forEach((pill) => {
@@ -110,9 +138,11 @@
       $("cuenta-rol").textContent = sesion.usuario.rol;
       $("cuenta-estado").textContent = sesion.usuario.estado;
 
-      // Cargar datos del usuario
+      // Cargar datos
       pintarBolsas();
       pintarExtracciones();
+      pintarConsumoSemanal();
+      pintarCatalogo();
       pintarComunidad();
 
       if (admin) {
@@ -145,7 +175,7 @@
                 <line x1="14" y1="1" x2="14" y2="4"></line>
               </svg>
             </div>
-            <p>Tu despensa está vacía. Añade tu primera bolsa de café para comenzar.</p>
+            <p>Tu despensa está vacía. Añade tu primera bolsa o explora en «Descubrir Café».</p>
           </div>
         `;
         return;
@@ -228,31 +258,330 @@
     }
   }
 
-  // — 2. MÓDULO: DIARIO DE EXTRACCIONES Y CALCULADORA EN VIVO —
+  // — 2. MÓDULO: DESCUBRIR CAFÉ (Filtros Santo Amaro) —
+  function configurarFiltrosCatalogo() {
+    const pillContainers = [
+      "filter-pills-cafeina",
+      "filter-pills-consumo",
+      "filter-pills-cafetera",
+      "filter-pills-sabor",
+      "filter-pills-intensidad",
+    ];
+
+    pillContainers.forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      const pills = el.querySelectorAll(".pill-btn");
+      pills.forEach((pill) => {
+        pill.addEventListener("click", () => {
+          pills.forEach((p) => p.classList.remove("active"));
+          pill.classList.add("active");
+          pintarCatalogo();
+        });
+      });
+    });
+  }
+
+  function leerFiltrosCatalogo() {
+    const obtenerActivo = (id) => {
+      const el = $(id);
+      if (!el) return "";
+      const active = el.querySelector(".pill-btn.active");
+      return active ? active.getAttribute("data-val") || "" : "";
+    };
+
+    return {
+      cafeina: obtenerActivo("filter-pills-cafeina"),
+      tipoConsumo: obtenerActivo("filter-pills-consumo"),
+      cafetera: obtenerActivo("filter-pills-cafetera"),
+      perfilSabor: obtenerActivo("filter-pills-sabor"),
+      intensidad: obtenerActivo("filter-pills-intensidad"),
+    };
+  }
+
+  async function pintarCatalogo() {
+    try {
+      const criterios = leerFiltrosCatalogo();
+      const cafes = await Com.descubrirCatalogo(criterios);
+      const contenedor = $("grid-catalogo");
+      if (!contenedor) return;
+
+      if (!cafes || cafes.length === 0) {
+        contenedor.innerHTML = `
+          <div class="empty-state" style="grid-column: 1 / -1;">
+            <div class="empty-state-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <p>No se encontraron cafés con estos filtros. Prueba otra combinación de opciones.</p>
+          </div>
+        `;
+        return;
+      }
+
+      contenedor.innerHTML = "";
+
+      cafes.forEach((c) => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+        card.innerHTML = `
+          <div>
+            <div class="item-card-header">
+              <div>
+                <h4 class="item-title">${escapeHTML(c.nombre)}</h4>
+                <span class="item-subtitle">${escapeHTML(c.origen)} · ${escapeHTML(c.tostador)}</span>
+              </div>
+              <span class="badge badge-sca">★ ${c.puntuacionSca} SCA</span>
+            </div>
+
+            <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.75rem 0;">
+              <span class="badge ${c.cafeina === "descafeinado" ? "badge-depleted" : "badge-active"}">
+                ${c.cafeina === "descafeinado" ? "Descafeinado" : "Normal"}
+              </span>
+              <span class="badge badge-method">${escapeHTML(c.perfilSabor)}</span>
+              <span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border);">
+                Intensidad ${escapeHTML(c.intensidad)}
+              </span>
+            </div>
+
+            <p style="font-size: 0.88rem; color: var(--text-main); line-height: 1.5; margin-bottom: 0.75rem;">
+              ${escapeHTML(c.descripcion)}
+            </p>
+
+            <div class="item-notes" style="margin-bottom: 1rem;">
+              <strong>Notas:</strong> ${escapeHTML(c.notasSabor)}
+            </div>
+          </div>
+
+          <div class="item-footer" style="padding-top: 1rem; border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-primary btn-block btn-importar-cafe" data-id="${c.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.4rem;">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Añadir a mi despensa (250g)
+            </button>
+          </div>
+        `;
+
+        card.querySelector(".btn-importar-cafe").addEventListener("click", async () => {
+          try {
+            await Com.importarCafeADespensa(c.id, 250);
+            mostrarMsg("descubrir-msg", `"${c.nombre}" añadido con éxito a tu despensa.`);
+            pintarBolsas();
+            $("descubrir-msg").scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (err) {
+            mostrarMsg("descubrir-msg", "ERROR al añadir café: " + err.message, true);
+          }
+        });
+
+        contenedor.appendChild(card);
+      });
+    } catch (e) {
+      console.error("Error al pintar catálogo:", e);
+    }
+  }
+
+  // — 3. MÓDULO: DIARIO DE EXTRACCIONES & CALCULADORA CONTEXTUAL —
   function configurarCalculadoraRatio() {
     const cafeInput = $("ext-cafe");
     const aguaInput = $("ext-agua");
+    const metodoSelect = $("ext-metodo");
+    const aguaLabel = $("lbl-ext-agua");
+    const mokaContainer = $("moka-dosis-container");
     const ratioDisplay = $("calc-ratio-display");
     const ratioHint = $("calc-ratio-hint");
 
     function calcular() {
       const cafe = parseFloat(cafeInput.value);
       const agua = parseFloat(aguaInput.value);
+      const metodo = (metodoSelect.value || "").toLowerCase();
 
       if (cafe > 0 && agua > 0) {
         const ratio = (agua / cafe).toFixed(1);
+        const ratioNum = parseFloat(ratio);
         ratioDisplay.textContent = "1 : " + ratio;
-        ratioHint.textContent = `${cafe}g de café molido para ${agua}g de agua vertida`;
+
+        let rangoOptimo = "";
+        let esOptimo = false;
+
+        if (metodo.includes("espresso")) {
+          esOptimo = ratioNum >= 1.8 && ratioNum <= 2.5;
+          rangoOptimo = "Rango ideal espresso: 1:1.8 a 1:2.5";
+        } else if (metodo.includes("moka") || metodo.includes("italiana")) {
+          esOptimo = ratioNum >= 8 && ratioNum <= 10;
+          rangoOptimo = "Rango ideal cafetera italiana: 1:8 a 1:10";
+        } else {
+          esOptimo = ratioNum >= 15 && ratioNum <= 17;
+          rangoOptimo = "Rango ideal filtro de especialidad: 1:15 a 1:17";
+        }
+
+        if (esOptimo) {
+          ratioDisplay.style.color = "var(--success)";
+          ratioHint.innerHTML = `<strong style="color: var(--success);">Ratio óptimo validado.</strong> ${rangoOptimo}`;
+        } else {
+          ratioDisplay.style.color = "var(--accent)";
+          ratioHint.textContent = `${cafe}g café / ${agua}g agua · ${rangoOptimo}`;
+        }
       } else {
         ratioDisplay.textContent = "1 : --";
+        ratioDisplay.style.color = "var(--accent)";
         ratioHint.textContent = "Introduce gramos de café y agua para calcular en tiempo real";
       }
     }
 
+    function actualizarContextoMetodo() {
+      const metodo = (metodoSelect.value || "").toLowerCase();
+
+      if (metodo.includes("espresso")) {
+        if (aguaLabel) aguaLabel.textContent = "Líquido en taza / Rendimiento (Yield en gramos) *";
+        if (aguaInput) aguaInput.placeholder = "36";
+        if (mokaContainer) mokaContainer.style.display = "none";
+      } else if (metodo.includes("moka") || metodo.includes("italiana")) {
+        if (aguaLabel) aguaLabel.textContent = "Capacidad de la cafetera / Agua en base *";
+        if (aguaInput) aguaInput.placeholder = "130";
+        if (mokaContainer) mokaContainer.style.display = "block";
+      } else {
+        if (aguaLabel) aguaLabel.textContent = "Agua vertida sobre filtro (g) *";
+        if (aguaInput) aguaInput.placeholder = "250";
+        if (mokaContainer) mokaContainer.style.display = "none";
+      }
+      calcular();
+    }
+
     cafeInput.addEventListener("input", calcular);
     aguaInput.addEventListener("input", calcular);
+    if (metodoSelect) {
+      metodoSelect.addEventListener("change", actualizarContextoMetodo);
+    }
+
+    // Píldoras rápidas para cafetera italiana Moka
+    const mokaPills = document.querySelectorAll("#pills-moka-dosis .pill-btn");
+    mokaPills.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const agua = btn.getAttribute("data-agua");
+        const cafe = btn.getAttribute("data-cafe");
+        if (aguaInput && agua) aguaInput.value = agua;
+        if (cafeInput && cafe) cafeInput.value = cafe;
+        calcular();
+      });
+    });
+
+    actualizarContextoMetodo();
   }
 
+  // — Widget de Consumo Semanal (últimos 7 días) —
+  async function pintarConsumoSemanal() {
+    try {
+      const resumen = await Com.consumoSemanal();
+      if (!resumen) return;
+
+      const totalGramosEl = $("weekly-total-gramos");
+      if (totalGramosEl) {
+        totalGramosEl.textContent = (resumen.totalGramos || 0) + "g";
+      }
+
+      const barsContainer = $("weekly-chart-bars");
+      if (barsContainer && Array.isArray(resumen.dias)) {
+        barsContainer.innerHTML = "";
+
+        const maxGramos = Math.max(...resumen.dias.map((d) => d.gramos || 0), 25);
+        const hoyIso = new Date().toISOString().slice(0, 10);
+
+        resumen.dias.forEach((dia) => {
+          const col = document.createElement("div");
+          col.className = "weekly-chart-col";
+
+          const pct = Math.max(0, Math.min(100, Math.round(((dia.gramos || 0) / maxGramos) * 100)));
+          const esHoy = dia.fecha === hoyIso;
+
+          col.innerHTML = `
+            <span class="weekly-chart-val">${dia.gramos > 0 ? dia.gramos + "g" : ""}</span>
+            <div class="weekly-chart-bar-wrap">
+              <div class="weekly-chart-bar-fill ${esHoy ? "active-today" : ""}" style="height: ${Math.max(pct, 4)}%;"></div>
+            </div>
+            <span class="weekly-chart-label" style="${esHoy ? "color: var(--accent); font-weight: 700;" : ""}">${dia.diaSemana}</span>
+          `;
+          barsContainer.appendChild(col);
+        });
+      }
+
+      // Reparto por método
+      const breakdownContainer = $("weekly-methods-breakdown");
+      if (breakdownContainer) {
+        breakdownContainer.innerHTML = "";
+        const metodos = Object.keys(resumen.porMetodo || {});
+        if (metodos.length === 0) {
+          breakdownContainer.innerHTML = '<span style="font-size: 0.78rem; color: var(--text-muted);">Sin extracciones registradas esta semana.</span>';
+        } else {
+          metodos.forEach((m) => {
+            const data = resumen.porMetodo[m];
+            const pill = document.createElement("span");
+            pill.className = "weekly-method-pill";
+            pill.innerHTML = `${escapeHTML(m)}: <strong>${data.gramos}g (${data.porcentaje}%)</strong>`;
+            breakdownContainer.appendChild(pill);
+          });
+        }
+      }
+
+      // Métricas económicas opcionales (DESACTIVADAS por defecto)
+      const economicContainer = $("weekly-economic-summary");
+      const activoEconomico = localStorage.getItem("brewlab.metricas_economicas") === "true";
+      if (economicContainer) {
+        if (activoEconomico && resumen.totalGramos > 0) {
+          economicContainer.style.display = "flex";
+          const tazas = Math.round(resumen.totalGramos / 15) || 1;
+          const costeCasa = (tazas * 0.35).toFixed(2);
+          const costeCafeteria = (tazas * 2.5).toFixed(2);
+          const ahorro = (tazas * (2.5 - 0.35)).toFixed(2);
+          economicContainer.innerHTML = `
+            <span>Consumo estimado: <strong>~${tazas} tazas</strong> (${costeCasa} € en BrewLab vs ${costeCafeteria} € en cafetería)</span>
+            <span>Ahorro estimado esta semana: <strong>+${ahorro} €</strong></span>
+          `;
+        } else {
+          economicContainer.style.display = "none";
+          economicContainer.innerHTML = "";
+        }
+      }
+    } catch (e) {
+      console.error("Error al pintar consumo semanal:", e);
+    }
+  }
+
+  // — Copiar Ficha de Barista estilizada al portapapeles —
+  function copiarFichaBarista(e) {
+    const puntuacionNum = Number(e.puntuacion) || 0;
+    const estrellas = puntuacionNum > 0 ? "★".repeat(puntuacionNum) + ` (${puntuacionNum}/5)` : "Sin valorar";
+    const tiempo = e.tiempoSegundos ? `${e.tiempoSegundos}s` : "No registrado";
+
+    const ticket = [
+      "☕ BREWLAB · FICHA DE BARISTA",
+      "─────────────────────────────",
+      `Café: ${e.nombreCafe}`,
+      `Origen: ${e.origen}`,
+      `Método: ${e.metodo}`,
+      `Dosis: ${e.cafeGramos}g café · ${e.aguaGramos}g agua · Ratio 1:${e.ratio}`,
+      `Molienda: ${e.molienda || "Media"} · Tiempo: ${tiempo}`,
+      `Notas sensoriales: ${e.notasSabor || "Sin notas adicionales"}`,
+      `Valoración: ${estrellas}`,
+      "─────────────────────────────",
+      "Preparado con BrewLab · Procesos-2627",
+    ].join("\n");
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ticket).then(() => {
+        mostrarToast("Ficha de barista copiada al portapapeles");
+      }).catch(() => {
+        mostrarToast("Ficha generada para compartir");
+      });
+    } else {
+      mostrarToast("Ficha generada para compartir");
+    }
+  }
+
+  // — Listado de Mis Extracciones —
   async function pintarExtracciones() {
     try {
       const extracciones = await Com.listarExtracciones();
@@ -314,15 +643,29 @@
 
           <div class="item-footer">
             <span style="font-size: 0.78rem; color: var(--text-muted);">${formatearFecha(e.creadaEn)}</span>
-            <button type="button" class="btn btn-danger btn-sm btn-borrar-extraccion" data-id="${e.id}">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-              Borrar
-            </button>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button type="button" class="btn-compartir-ficha">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                  <polyline points="16 6 12 2 8 6"></polyline>
+                  <line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+                Compartir Ficha
+              </button>
+              <button type="button" class="btn btn-danger btn-sm btn-borrar-extraccion" data-id="${e.id}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Borrar
+              </button>
+            </div>
           </div>
         `;
+
+        card.querySelector(".btn-compartir-ficha").addEventListener("click", () => {
+          copiarFichaBarista(e);
+        });
 
         card.querySelector(".btn-borrar-extraccion").addEventListener("click", async () => {
           if (confirm("¿Deseas eliminar este registro de extracción?")) {
@@ -330,6 +673,7 @@
               await Com.borrarExtraccion(e.id);
               mostrarMsg("ext-msg", "Extracción eliminada con éxito.");
               pintarExtracciones();
+              pintarConsumoSemanal();
             } catch (err) {
               mostrarMsg("ext-msg", "ERROR: " + err.message, true);
             }
@@ -343,14 +687,56 @@
     }
   }
 
-  // — 3. MÓDULO: COMUNIDAD DE RECETAS —
+  // — 4. MÓDULO: COMUNIDAD DE RECETAS & RECETAS MAESTRAS DE INTERNET —
+  function cargarRecetaEnDiario(r) {
+    cambiarTab("tab-extracciones");
+
+    const selectMetodo = $("ext-metodo");
+    if (selectMetodo) {
+      let encontrado = false;
+      const metodoLimpio = (r.metodo || "").toLowerCase();
+      for (const opt of selectMetodo.options) {
+        if (
+          opt.value.toLowerCase() === metodoLimpio ||
+          opt.text.toLowerCase().includes(metodoLimpio)
+        ) {
+          selectMetodo.value = opt.value;
+          encontrado = true;
+          break;
+        }
+      }
+      if (!encontrado && selectMetodo.options.length > 0) {
+        selectMetodo.value = selectMetodo.options[0].value;
+      }
+      selectMetodo.dispatchEvent(new Event("change"));
+    }
+
+    if ($("ext-cafe")) $("ext-cafe").value = r.cafeGramos || "";
+    if ($("ext-agua")) $("ext-agua").value = r.aguaGramos || "";
+    if ($("ext-tiempo") && r.tiempoSegundos) $("ext-tiempo").value = r.tiempoSegundos;
+    if ($("ext-molienda") && r.molienda) {
+      for (const opt of $("ext-molienda").options) {
+        if (opt.value.toLowerCase().includes(r.molienda.toLowerCase())) {
+          $("ext-molienda").value = opt.value;
+          break;
+        }
+      }
+    }
+    if ($("ext-notas") && r.notasSabor) $("ext-notas").value = r.notasSabor;
+
+    $("calc-ratio-display").textContent = "1 : " + r.ratio;
+    mostrarMsg("ext-msg", `Receta "${r.nombreCafe}" cargada en tu diario. Selecciona tu bolsa y registra la extracción.`);
+    $("form-extraccion").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function pintarComunidad() {
     try {
       const buscar = $("com-buscar") ? $("com-buscar").value.trim() : "";
       const metodo = $("com-metodo") ? $("com-metodo").value.trim() : "";
 
-      const recetas = await Com.listarComunidad({ buscar, metodo });
+      const recetas = await Com.listarComunidad({ buscar, metodo, incluirMaestras: true });
       const contenedor = $("muro-comunidad");
+      if (!contenedor) return;
 
       if (!recetas || recetas.length === 0) {
         contenedor.innerHTML = `
@@ -371,8 +757,10 @@
 
       recetas.forEach((r) => {
         const puntuacionNum = Number(r.puntuacion) || 0;
+        const esMaestra = Boolean(r.esMaestra);
         const card = document.createElement("div");
         card.className = "item-card";
+
         card.innerHTML = `
           <div>
             <div class="item-card-header">
@@ -380,7 +768,8 @@
                 <h4 class="item-title">${escapeHTML(r.nombreCafe)}</h4>
                 <span class="item-subtitle">${escapeHTML(r.origen)}</span>
               </div>
-              <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                ${esMaestra ? '<span class="badge badge-master">★ Receta Maestra</span>' : ""}
                 ${puntuacionNum > 0 ? `<span class="badge-rating">★ ${puntuacionNum}.0</span>` : ""}
                 <span class="badge badge-method">${escapeHTML(r.metodo)}</span>
               </div>
@@ -400,15 +789,30 @@
             </div>
 
             ${r.notasSabor ? `<div class="item-notes">“${escapeHTML(r.notasSabor)}”</div>` : ""}
+
+            ${r.urlExterna ? `
+              <div style="margin: 0.85rem 0 0.25rem 0;">
+                <a href="${escapeHTML(r.urlExterna)}" target="_blank" rel="noopener noreferrer" class="link-externo">
+                  Ver receta original / vídeo ↗
+                </a>
+              </div>
+            ` : ""}
           </div>
 
-          <div class="item-footer">
+          <div class="item-footer" style="flex-wrap: wrap; gap: 0.5rem;">
             <span style="font-size: 0.82rem; color: var(--text-muted);">
-              Barista: <strong style="color: var(--text-main);">${escapeHTML(r.usuarioEmail.split("@")[0])}</strong>
+              ${esMaestra ? `Autor: <strong style="color: var(--accent);">${escapeHTML(r.autor || "Maestro Barista")}</strong>` : `Barista: <strong style="color: var(--text-main);">${escapeHTML(r.usuarioEmail ? r.usuarioEmail.split("@")[0] : "Anónimo")}</strong>`}
             </span>
-            <span style="font-size: 0.78rem; color: var(--text-muted);">${formatearFecha(r.creadaEn)}</span>
+            <button type="button" class="btn-cargar-diario">
+              Cargar en mi diario
+            </button>
           </div>
         `;
+
+        card.querySelector(".btn-cargar-diario").addEventListener("click", () => {
+          cargarRecetaEnDiario(r);
+        });
+
         contenedor.appendChild(card);
       });
     } catch (e) {
@@ -416,14 +820,13 @@
     }
   }
 
-  // — 4. MÓDULO: ADMINISTRACIÓN Y MÉTRICAS —
+  // — 5. MÓDULO: ADMINISTRACIÓN Y MÉTRICAS GLOBALES —
   async function pintarAdmin() {
     const sesion = Com.leerSesion();
     if (!sesion || !sesion.usuario || sesion.usuario.rol !== "admin") {
       return;
     }
 
-    // 1. Pintar Métricas agregadas
     try {
       const m = await Com.obtenerMetricas();
       $("metric-cafe-consumido").textContent = (m.totalCafeGramosConsumidos || 0) + "g";
@@ -437,13 +840,12 @@
       console.error("Error al cargar métricas de admin:", e);
     }
 
-    // 2. Pintar Moderación de Recetas
     try {
-      const recetas = await Com.listarComunidad();
+      const recetas = await Com.listarComunidad({ incluirMaestras: false });
       const contenedor = $("lista-moderacion");
 
       if (!recetas || recetas.length === 0) {
-        contenedor.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No hay recetas públicas activas para moderar.</p>';
+        contenedor.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No hay recetas de la comunidad registradas para moderar.</p>';
       } else {
         contenedor.innerHTML = "";
         recetas.forEach((r) => {
@@ -499,7 +901,6 @@
       mostrarMsg("admin-mod-msg", "ERROR al cargar moderación: " + e.message, true);
     }
 
-    // 3. Pintar Lista de Usuarios
     try {
       const lista = await Com.listarUsuarios();
       const ul = $("lista-usuarios");
@@ -542,7 +943,18 @@
     await pintarEstado();
     configurarTabs();
     configurarPillsMetodos();
+    configurarFiltrosCatalogo();
     configurarCalculadoraRatio();
+
+    // Checkbox de métricas económicas
+    const chkEconomico = $("chk-metricas-economicas");
+    if (chkEconomico) {
+      chkEconomico.checked = localStorage.getItem("brewlab.metricas_economicas") === "true";
+      chkEconomico.addEventListener("change", () => {
+        localStorage.setItem("brewlab.metricas_economicas", chkEconomico.checked ? "true" : "false");
+        pintarConsumoSemanal();
+      });
+    }
 
     // Recoger token de OAuth si volvemos de GitHub (?token=...)
     const params = new URLSearchParams(window.location.search);
@@ -562,7 +974,7 @@
       try {
         await Com.me();
       } catch {
-        // Token inválido o expirado: pedir() ya limpió la sesión
+        // Token inválido o expirado
       }
     }
 
@@ -654,9 +1066,10 @@
       $("calc-ratio-display").textContent = "1 : --";
       $("calc-ratio-hint").textContent = "Introduce gramos de café y agua para calcular en tiempo real";
 
-      // Refrescar vistas afectadas
+      // Refrescar vistas
       pintarExtracciones();
-      pintarBolsas(); // Para ver el descuento de gramos
+      pintarConsumoSemanal();
+      pintarBolsas();
       if (datos.esPublica) {
         pintarComunidad();
       }

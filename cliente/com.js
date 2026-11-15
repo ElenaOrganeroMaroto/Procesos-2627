@@ -119,7 +119,8 @@ const Com = {
     const q = new URLSearchParams();
     if (params.metodo) q.set("metodo", params.metodo);
     if (params.buscar) q.set("buscar", params.buscar);
-    const qs = q.toString() ? "?" + q.toString() : "";
+    q.set("incluirMaestras", params.incluirMaestras !== undefined ? String(params.incluirMaestras) : "true");
+    const qs = "?" + q.toString();
     return this.pedir("GET", "/api/comunidad" + qs, undefined, true);
   },
 
@@ -129,6 +130,35 @@ const Com = {
 
   obtenerMetricas() {
     return this.pedir("GET", "/api/admin/metricas", undefined, true);
+  },
+
+  // — Experiencia V2.0: Descubrir Café y Consumo Semanal —
+  descubrirCatalogo(criterios = {}) {
+    const q = new URLSearchParams();
+    if (criterios.cafeina) q.set("cafeina", criterios.cafeina);
+    if (criterios.tipoConsumo) q.set("tipoConsumo", criterios.tipoConsumo);
+    if (criterios.cafetera) q.set("cafetera", criterios.cafetera);
+    if (criterios.perfilSabor) q.set("perfilSabor", criterios.perfilSabor);
+    if (criterios.intensidad) q.set("intensidad", criterios.intensidad);
+    if (criterios.buscar) q.set("buscar", criterios.buscar);
+    const qs = q.toString() ? "?" + q.toString() : "";
+    return this.pedir("GET", "/api/catalogo/descubrir" + qs);
+  },
+
+  importarCafeADespensa(id, gramosIniciales = 250) {
+    return this.pedir("POST", "/api/catalogo/" + encodeURIComponent(id) + "/importar", { gramosIniciales }, true);
+  },
+
+  importarCafe(id, gramosIniciales = 250) {
+    return this.importarCafeADespensa(id, gramosIniciales);
+  },
+
+  consumoSemanal() {
+    return this.pedir("GET", "/api/extracciones/consumo-semanal", undefined, true);
+  },
+
+  obtenerConsumoSemanal() {
+    return this.consumoSemanal();
   },
 
   // Canje del enlace de activación (PBI-7, página pública).
