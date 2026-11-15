@@ -340,6 +340,15 @@ function createApp(logica, opts = {}) {
     }
   });
 
+  // GET /api/extracciones/consumo-semanal: resumen de consumo de los últimos 7 días -> 200
+  app.get("/api/extracciones/consumo-semanal", requerirAuth, (req, res) => {
+    try {
+      res.json(logica.obtenerConsumoSemanal(req.usuario.email));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
   // GET /api/extracciones/:id: obtiene una extracción -> 200
   app.get("/api/extracciones/:id", requerirAuth, (req, res) => {
     try {
@@ -370,6 +379,7 @@ function createApp(logica, opts = {}) {
       const filtros = {
         metodo: req.query.metodo,
         buscar: req.query.buscar,
+        incluirMaestras: req.query.incluirMaestras === "true" || req.query.maestras === "true",
       };
       res.json(logica.listarComunidad(filtros));
     } catch (err) {
@@ -394,6 +404,30 @@ function createApp(logica, opts = {}) {
     try {
       const metricas = logica.obtenerMetricasPlataforma(req.usuario.email);
       res.json(metricas);
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // — Catálogo y Descubrir Café (V2.0) —
+
+  // GET /api/catalogo/descubrir: devuelve lista filtrada de cafés recomendados -> 200
+  app.get("/api/catalogo/descubrir", (req, res) => {
+    try {
+      res.json(logica.filtrarCatalogo(req.query));
+    } catch (err) {
+      enviarError(res, err);
+    }
+  });
+
+  // POST /api/catalogo/:id/importar: añade café a la despensa del usuario -> 201
+  app.post("/api/catalogo/:id/importar", requerirAuth, (req, res) => {
+    try {
+      const cuerpo = req.body || {};
+      const gramos = cuerpo.gramosIniciales || 250;
+      const bolsa = logica.importarCafeADespensa(req.usuario.email, req.params.id, gramos);
+      log("info", "café de catálogo importado", { id: req.params.id, bolsaId: bolsa.id, usuario: req.usuario.email });
+      res.status(201).json({ mensaje: "Café añadido a tu despensa", bolsa });
     } catch (err) {
       enviarError(res, err);
     }

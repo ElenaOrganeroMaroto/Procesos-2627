@@ -570,6 +570,11 @@ class Logica {
   listarComunidad(filtros = {}) {
     let resultado = this.datos.listarExtraccionesPublicas();
 
+    if (filtros.incluirMaestras || filtros.maestras) {
+      const maestras = this.datos.listarRecetasMaestras ? this.datos.listarRecetasMaestras() : [];
+      resultado = resultado.concat(maestras);
+    }
+
     if (filtros.metodo && typeof filtros.metodo === "string") {
       const m = filtros.metodo.trim().toLowerCase();
       resultado = resultado.filter(
@@ -689,6 +694,177 @@ class Logica {
       metodoMasPopular,
       origenMasConsumido,
       promedioPuntuacion,
+    };
+  }
+
+  // — Catálogo «Descubrir Café» y Métricas Semanales (V2.0) —
+
+  /**
+   * Filtra el catálogo curado de especialidad según criterios intuitivos.
+   * Si no se especifica filtro o es "todos"/"todas", retorna los 8 cafés.
+   */
+  filtrarCatalogo(criterios = {}) {
+    let cafes = this.datos.listarCatalogo ? this.datos.listarCatalogo() : [];
+
+    if (!criterios || typeof criterios !== "object") {
+      return cafes;
+    }
+
+    // Filtro cafeína: normal | descafeinado
+    if (criterios.cafeina && typeof criterios.cafeina === "string") {
+      const c = criterios.cafeina.trim().toLowerCase();
+      if (c && c !== "todos" && c !== "todas") {
+        cafes = cafes.filter((item) => item.cafeina && item.cafeina.toLowerCase() === c);
+      }
+    }
+
+    // Filtro tipo consumo: solo | con_leche | frio
+    if (criterios.tipoConsumo && typeof criterios.tipoConsumo === "string") {
+      const t = criterios.tipoConsumo.trim().toLowerCase();
+      if (t && t !== "todos" && t !== "todas") {
+        cafes = cafes.filter(
+          (item) => Array.isArray(item.tipoConsumo) && item.tipoConsumo.some((tc) => tc.toLowerCase() === t)
+        );
+      }
+    }
+
+    // Filtro cafetera: italiana | espresso | superautomatica | filtro | prensa
+    const cafeteraVal = criterios.cafetera || criterios.cafeteras;
+    if (cafeteraVal && typeof cafeteraVal === "string") {
+      const k = cafeteraVal.trim().toLowerCase();
+      if (k && k !== "todas" && k !== "todos") {
+        cafes = cafes.filter(
+          (item) => Array.isArray(item.cafeteras) && item.cafeteras.some((cf) => cf.toLowerCase() === k)
+        );
+      }
+    }
+
+    // Filtro perfil de sabor: afrutado | achocolatado | especiado
+    if (criterios.perfilSabor && typeof criterios.perfilSabor === "string") {
+      const p = criterios.perfilSabor.trim().toLowerCase();
+      if (p && p !== "todos" && p !== "todas") {
+        cafes = cafes.filter((item) => item.perfilSabor && item.perfilSabor.toLowerCase() === p);
+      }
+    }
+
+    // Filtro intensidad: suave | media | intensa
+    if (criterios.intensidad && typeof criterios.intensidad === "string") {
+      const i = criterios.intensidad.trim().toLowerCase();
+      if (i && i !== "todas" && i !== "todos") {
+        cafes = cafes.filter((item) => item.intensidad && item.intensidad.toLowerCase() === i);
+      }
+    }
+
+    // Búsqueda libre
+    if (criterios.buscar && typeof criterios.buscar === "string") {
+      const b = criterios.buscar.trim().toLowerCase();
+      if (b) {
+        cafes = cafes.filter(
+          (item) =>
+            (item.nombre && item.nombre.toLowerCase().includes(b)) ||
+            (item.origen && item.origen.toLowerCase().includes(b)) ||
+            (item.tostador && item.tostador.toLowerCase().includes(b)) ||
+            (item.notasSabor && item.notasSabor.toLowerCase().includes(b)) ||
+            (item.descripcion && item.descripcion.toLowerCase().includes(b))
+        );
+      }
+    }
+
+    return cafes;
+  }
+
+  /**
+   * Importa automáticamente un café del catálogo a la despensa del usuario con gramos iniciales.
+   */
+  importarCafeADespensa(usuarioEmail, cafeId, gramos = 250) {
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    if (!EMAIL_RE.test(normalizado)) {
+      throw fallo("VALIDACION", "email inválido");
+    }
+    const cafe = this.datos.buscarEnCatalogo ? this.datos.buscarEnCatalogo(cafeId) : null;
+    if (!cafe) {
+      throw fallo("NO_ENCONTRADO", "café no encontrado en catálogo");
+    }
+
+    const g = Number(gramos) > 0 ? Number(gramos) : 250;
+    const datosBolsa = {
+      nombre: cafe.nombre,
+      origen: cafe.origen,
+      tostador: cafe.tostador,
+      variedad: `Especialidad (${cafe.puntuacionSca} SCA)`,
+      proceso: "Selección Especial",
+      gramosIniciales: g,
+    };
+
+    return this.crearBolsa(normalizado, datosBolsa);
+  }
+
+  /**
+   * Agrupa los gramos consumidos por el usuario en los últimos 7 días y el reparto porcentual por método.
+   */
+  obtenerConsumoSemanal(usuarioEmail) {
+    const normalizado = this.normalizarEmail(usuarioEmail);
+    if (!EMAIL_RE.test(normalizado)) {
+      throw fallo("VALIDACION", "email inválido");
+    }
+
+    const extracciones = this.datos.listarExtraccionesPorUsuario(normalizado);
+
+    // Ventana de 7 días (hoy y 6 días previos)
+    const NOMBRES_DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const dias = [];
+    const fechaMap = new Map();
+
+    const hoy = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(hoy.getTime() - i * 24 * 60 * 60 * 1000);
+      const fecha = d.toISOString().slice(0, 10);
+      const diaSemana = NOMBRES_DIAS[d.getUTCDay()];
+      const diaObj = { fecha, diaSemana, gramos: 0, extracciones: 0 };
+      dias.push(diaObj);
+      fechaMap.set(fecha, diaObj);
+    }
+
+    let totalGramos = 0;
+    let totalExtracciones = 0;
+    const porMetodo = {};
+
+    for (const ext of extracciones) {
+      if (!ext.creadaEn) continue;
+      const fechaExt = ext.creadaEn.slice(0, 10);
+      const diaObj = fechaMap.get(fechaExt);
+      if (diaObj) {
+        const g = Number(ext.cafeGramos) || 0;
+        diaObj.gramos = Number((diaObj.gramos + g).toFixed(1));
+        diaObj.extracciones += 1;
+        totalGramos += g;
+        totalExtracciones += 1;
+
+        const m = ext.metodo || "Otro";
+        if (!porMetodo[m]) {
+          porMetodo[m] = { gramos: 0, extracciones: 0, porcentaje: 0 };
+        }
+        porMetodo[m].gramos = Number((porMetodo[m].gramos + g).toFixed(1));
+        porMetodo[m].extracciones += 1;
+      }
+    }
+
+    totalGramos = Number(totalGramos.toFixed(1));
+
+    // Porcentaje por método
+    for (const m of Object.keys(porMetodo)) {
+      porMetodo[m].porcentaje =
+        totalGramos > 0
+          ? Number(((porMetodo[m].gramos / totalGramos) * 100).toFixed(1))
+          : 0;
+    }
+
+    return {
+      totalGramos,
+      totalExtracciones,
+      promedioGramosPorDia: Number((totalGramos / 7).toFixed(1)),
+      dias,
+      porMetodo,
     };
   }
 
