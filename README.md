@@ -102,11 +102,26 @@ npm start
 # abrir http://localhost:3000  (health: http://localhost:3000/api/health)
 ```
 
+## Experiencia Completa BrewLab (V2.0)
+| Método | Ruta | Respuestas |
+|---|---|---|
+| `GET` | `/api/catalogo/descubrir?cafeina=…&tipoConsumo=…&cafetera=…` | `200` lista filtrada de cafés recomendados |
+| `POST` | `/api/catalogo/:id/importar` `{ gramosIniciales? }` (protegida) | `201` añade automáticamente una bolsa de 250g a la despensa |
+| `GET` | `/api/extracciones/consumo-semanal` (protegida) | `200` resumen últimos 7 días (gramos, días y reparto por método) |
+| `GET` | `/api/comunidad?incluirMaestras=true` (protegida) | `200` incluye recetas maestras legendarias con enlace `urlExterna` |
+
+Funcionalidades añadidas en la versión 2.0:
+1. **Catálogo «Descubrir Café»**: 8 cafés de especialidad con 5 filtros no técnicos (cafeína, forma de tomarlo, cafetera en casa, perfil de sabor e intensidad) y botón de importación directa a la despensa (250g).
+2. **Formulario Inteligente y Contextual**: adapta placeholders, etiquetas (Yield en Espresso vs Agua en base en Moka vs Agua vertida en Filtro), píldoras de dosis rápida para Moka (90g, 130g, 240g) y validación del ratio óptimo en verde.
+3. **Recetas Maestras con Fuentes**: 6 preparaciones históricas (Hoffmann V60/Prensa, Kasuya 4:6, Wendelboe Aeropress, INEI Espresso, ChefSteps Moka) con enlaces web/vídeo y botón «Cargar en mi diario».
+4. **Widget de Consumo Semanal y Ficha de Barista**: gráfico minimalista de barras con los últimos 7 días y botón «Compartir Ficha» que formatea un ticket de barista listo para WhatsApp/portapapeles.
+5. **Métricas Económicas Opcionales**: desactivadas por defecto (cero euros en interfaz salvo activación explícita en Mi Cuenta).
+
 ## Tests
 ```sh
 npm test
 ```
-PBI-1 incluye smoke tests del esqueleto; PBI-2 añade 8 tests unitarios de `logica.js` y 6 de `/api/users` (incluido 401 sin token). PBI-3 añade 7 de registro/login y 3 de `/api/auth/*`. PBI-4 añade 6 de sesión (revalidación, logout, ciclo HTTP, 401). PBI-5 añade 6 de persistencia con stubs (sin BBDD real). PBI-6 añade 6 de roles en lógica y 3 de control de rol en endpoints. PBI-7 añade 6 de verificación, 4 de email/activación en API y 3 unitarios del adaptador SMTP (con stubs y modo simulado, cero red). PBI-8 añade 6 de login externo y 4 de flujo OAuth (con stub, cero red). Seed de admin: 3 tests (crear, idempotencia, ascenso). Variante técnica 5: 12 tests. Total: 88 tests automatizados.
+PBI-1 incluye smoke tests del esqueleto; PBI-2 añade 8 tests unitarios de `logica.js` y 6 de `/api/users`. PBI-3 añade 7 de registro/login y 3 de `/api/auth/*`. PBI-4 añade 6 de sesión. PBI-5 añade 6 de persistencia con stubs. PBI-6 añade 6 de roles y 3 de endpoints. PBI-7 añade 6 de verificación, 4 de API y 3 de SMTP. PBI-8 añade 6 de login externo y 4 de OAuth. Seed de admin: 3 tests. Variante técnica 5: 12 tests. PBI-9 (Despensa de café): 12 tests. PBI-10 (Extracciones y ratios): 15 tests. PBI-11 (Comunidad y métricas): 19 tests. V2.0 (Catálogo, recetas maestras y consumo semanal): 13 tests. Total: 147 tests automatizados passing al 100%.
 
 ## Variables de entorno
 | Nombre | Uso |
